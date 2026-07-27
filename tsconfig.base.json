@@ -1,0 +1,32 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "strict": false,
+    "paths": {
+      "@sow/ui": ["./libs/ui/src/index.ts"],
+      "@sow/auth": ["./libs/auth/src/index.ts"],
+      "@sow/db": ["./libs/db/src/index.ts"],
+      "@sow/validation": ["./libs/validation/src/index.ts"],
+      "@sow/api-types": ["./libs/api-types/src/index.ts"],
+      "@sow/clients": ["./libs/clients/src/index.ts"],
+      "@sow/projects": ["./libs/projects/src/index.ts"],
+      "@sow/templates": ["./libs/templates/src/index.ts"],
+      "@sow/sows": ["./libs/sows/src/index.ts"],
+      "@sow/workflows": ["./libs/workflows/src/index.ts"],
+      "@sow/audit": ["./libs/audit/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}
