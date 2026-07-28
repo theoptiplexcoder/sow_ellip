@@ -34,6 +34,11 @@ enum ApprovalStatus {
   CHANGES_REQUESTED
   SKIPPED
 }
+enum SignupRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
 
 model Organization {
   id        String   @id @default(cuid())
@@ -115,20 +120,24 @@ model Project {
 }
 
 model Template {
-  id                 String   @id @default(cuid())
-  organizationId     String
-  createdById        String
-  name               String
-  description        String?
-  overviewDefault    String?
-  objectivesDefault  String?
-  scopeDefault       String?
-  outOfScopeDefault  String?
-  assumptionsDefault String?
-  termsDefault       String?
-  isActive           Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id             String   @id @default(cuid())
+  organizationId String
+  createdById    String
+  name           String
+  description    String?
+  // JSON Schema driving the react-jsonschema-form (RJSF) renderer — the
+  // single source of truth for this template's fields. Required: a
+  // template without a schema has nothing to render.
+  jsonSchema     Json
+  // RJSF UI Schema (widget choices, field order, help text). Optional:
+  // RJSF renders sensible defaults from jsonSchema alone.
+  uiSchema       Json?
+  // Pre-filled form data (RJSF formData) for new SOWs started from this
+  // template.
+  defaultValues  Json?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
@@ -193,6 +202,11 @@ model Sow {
   pricing            String?
   paymentTerms       String?
   termsAndConditions String?
+  // Verbatim RJSF submission (formData) when this SOW was created from a
+  // Template. Canonical keys within it are mirrored onto the flat fields
+  // above by the Sow<->Template bridge; any extra template-defined fields
+  // live only here.
+  formAnswers        Json?
   submittedAt        DateTime?
   approvedAt         DateTime?
   createdAt          DateTime  @default(now())
@@ -297,4 +311,47 @@ model AuditLog {
 
   @@index([organizationId, entityType, entityId, createdAt])
   @@index([organizationId, userId, createdAt])
+}
+
+model OrganizationSignupRequest {
+  id               String              @id @default(cuid())
+  organizationName String
+  organizationSlug String              @unique
+  adminAuthUserId  String              @unique
+  adminName        String
+  adminEmail       String              @unique
+  adminPhone       String?
+  status           SignupRequestStatus @default(PENDING)
+  reviewedById     String?
+  reviewedAt       DateTime?
+  rejectionReason  String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  reviewedBy SuperAdmin? @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
+
+model SuperAdmin {
+  id        String   @id
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  reviewedRequests OrganizationSignupRequest[]
+  auditLogs        SuperAdminAuditLog[]
+}
+
+model SuperAdminAuditLog {
+  id           String   @id @default(cuid())
+  superAdminId String?
+  action       String
+  requestId    String
+  details      Json?
+  createdAt    DateTime @default(now())
+
+  superAdmin SuperAdmin? @relation(fields: [superAdminId], references: [id], onDelete: SetNull)
+
+  @@index([requestId, createdAt])
 }
