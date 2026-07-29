@@ -9,16 +9,18 @@ export const DropdownMenuTrigger = RadixDropdownMenu.Trigger;
 export function DropdownMenuContent({
   children,
   align = 'end',
+  className,
 }: {
   children: React.ReactNode;
   align?: 'start' | 'end' | 'center';
+  className?: string;
 }) {
   return (
     <RadixDropdownMenu.Portal>
       <RadixDropdownMenu.Content
         align={align}
         sideOffset={4}
-        className="z-50 min-w-[10rem] rounded-md border border-border bg-card p-1 shadow-lg"
+        className={cn('z-50 min-w-[10rem] rounded-md border border-border bg-card p-1 shadow-lg', className)}
       >
         {children}
       </RadixDropdownMenu.Content>

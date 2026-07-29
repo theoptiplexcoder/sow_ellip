@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { DASHBOARD_ROLES, type DashboardRole, type NavConfig } from '../../../components/admin/nav-config';
 import { PARTICIPANT_NAV_CONFIG } from '../../../components/participant/nav-config';
@@ -38,16 +38,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         userInitials={userInitials}
       />
       <div className="flex flex-1 relative">
-        <Sidebar
-          nav={nav}
-          basePath="/tenantSlug"
-          pathname={pathname}
-          collapsed={collapsed}
-          mobileOpen={mobileOpen}
-          onCloseMobile={() => setMobileOpen(false)}
-          roleLabel={label}
-          userInitials={userInitials}
-        />
+        <Suspense fallback={null}>
+          <Sidebar
+            nav={nav}
+            basePath="/tenantSlug"
+            pathname={pathname}
+            collapsed={collapsed}
+            mobileOpen={mobileOpen}
+            onCloseMobile={() => setMobileOpen(false)}
+            roleLabel={label}
+            userInitials={userInitials}
+          />
+        </Suspense>
         <main className="flex-1 p-6 min-w-0">{children}</main>
       </div>
     </div>
