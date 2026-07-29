@@ -297,7 +297,7 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
             !hideCreateButton && (
               <Button onClick={() => router.push('/tenantSlug/admin/sows/new')}>
                 <Plus className="h-4 w-4" />
-                New SOW
+                New SOW Template
               </Button>
             )
           }
