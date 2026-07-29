@@ -4,7 +4,7 @@ import { SowsPage } from '../../../../../components/admin/SowsPage';
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <SowsPage />
+      <SowsPage hideCreateButton={true} />
     </Suspense>
   );
 }

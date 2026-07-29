@@ -98,14 +98,18 @@ export function Navbar({
               <FileText className="mr-2 h-4 w-4" />
               <span>New SOW</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <FileText className="mr-2 h-4 w-4" />
-              <span>New Template</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <GitPullRequest className="mr-2 h-4 w-4" />
-              <span>New Workflow</span>
-            </DropdownMenuItem>
+            {roleLabel !== 'SOW Participant' && (
+              <>
+                <DropdownMenuItem>
+                  <FileText className="mr-2 h-4 w-4" />
+                  <span>New Template</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <GitPullRequest className="mr-2 h-4 w-4" />
+                  <span>New Workflow</span>
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

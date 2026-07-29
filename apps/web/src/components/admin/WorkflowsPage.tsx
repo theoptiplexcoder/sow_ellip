@@ -92,7 +92,11 @@ const emptyForm = {
   steps: [emptyStep()] as Step[],
 };
 
-export function WorkflowsPage() {
+interface WorkflowsPageProps {
+  readOnly?: boolean;
+}
+
+export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
   const [workflows, setWorkflows] = useState<WorkflowRow[]>(INITIAL_WORKFLOWS);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<WorkflowRow | null>(null);
@@ -190,131 +194,133 @@ export function WorkflowsPage() {
         title="Workflows"
         description="Ordered approval steps, each assigned to an approver in your organization."
         actions={
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openCreate}>
-                <Plus className="h-4 w-4" />
-                New workflow
-              </Button>
-            </DialogTrigger>
-            <DialogContent title={editing ? 'Edit workflow' : 'New workflow'} className="max-w-2xl">
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                <div>
-                  <Label htmlFor="workflow-name">Name</Label>
-                  <Input
-                    id="workflow-name"
-                    required
-                    value={form.name}
-                    onChange={(e) => {
-                      setForm({ ...form, name: e.target.value });
-                      setNameError(null);
-                    }}
-                  />
-                  {nameError && <p className="mt-1 text-xs text-red-600">{nameError}</p>}
-                </div>
-                <div>
-                  <Label htmlFor="workflow-description">Description</Label>
-                  <Input
-                    id="workflow-description"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  />
-                </div>
+          !readOnly && (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={openCreate}>
+                  <Plus className="h-4 w-4" />
+                  New workflow
+                </Button>
+              </DialogTrigger>
+              <DialogContent title={editing ? 'Edit workflow' : 'New workflow'} className="max-w-2xl">
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                  <div>
+                    <Label htmlFor="workflow-name">Name</Label>
+                    <Input
+                      id="workflow-name"
+                      required
+                      value={form.name}
+                      onChange={(e) => {
+                        setForm({ ...form, name: e.target.value });
+                        setNameError(null);
+                      }}
+                    />
+                    {nameError && <p className="mt-1 text-xs text-red-600">{nameError}</p>}
+                  </div>
+                  <div>
+                    <Label htmlFor="workflow-description">Description</Label>
+                    <Input
+                      id="workflow-description"
+                      value={form.description}
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    />
+                  </div>
 
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <Label className="mb-0">Steps</Label>
-                    <Button type="button" size="sm" variant="ghost" onClick={addStep}>
-                      <Plus className="h-3.5 w-3.5" />
-                      Add step
-                    </Button>
-                  </div>
-                  <div className="mb-1 flex items-center gap-2 px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    <span className="w-5 shrink-0" />
-                    <span className="flex-1">Label</span>
-                    <span className="w-48 shrink-0">Approvers</span>
-                    <span className="w-20 shrink-0">Logic</span>
-                    <span className="w-28 shrink-0">Role</span>
-                    <span className="w-21 shrink-0" />
-                  </div>
-                  <div className="space-y-2">
-                    {form.steps.map((step, index) => (
-                      <div key={index} className="flex items-center gap-2 rounded-md border border-border p-2">
-                        <span className="w-5 shrink-0 text-center text-xs font-medium text-muted-foreground">
-                          {index + 1}
-                        </span>
-                        <Input
-                          placeholder="Step label"
-                          required
-                          className="flex-1 min-w-0"
-                          value={step.label}
-                          onChange={(e) => updateStep(index, { label: e.target.value })}
-                        />
-                        <StepApproversEditor
-                          approverIds={step.approverIds}
-                          approvers={APPROVERS}
-                          onChange={(patch) => updateStep(index, patch)}
-                        />
-                        <Select value={step.matchType} onValueChange={(v) => updateStep(index, { matchType: v as MatchType })}>
-                          <SelectTrigger className="w-20 shrink-0" />
-                          <SelectContent>
-                            <SelectItem value="AND">AND</SelectItem>
-                            <SelectItem value="OR">OR</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Select value={step.role} onValueChange={(v) => updateStep(index, { role: v as StepRole })}>
-                          <SelectTrigger className="w-28 shrink-0" />
-                          <SelectContent>
-                            {STEP_ROLES.map((r) => (
-                              <SelectItem key={r} value={r}>
-                                {r.charAt(0) + r.slice(1).toLowerCase()}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <div className="flex shrink-0 gap-1">
-                          <button
-                            type="button"
-                            disabled={index === 0}
-                            onClick={() => moveStep(index, -1)}
-                            className="rounded p-1 text-muted-foreground hover:bg-accent disabled:opacity-30"
-                            aria-label="Move step up"
-                          >
-                            <ArrowUp className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={index === form.steps.length - 1}
-                            onClick={() => moveStep(index, 1)}
-                            className="rounded p-1 text-muted-foreground hover:bg-accent disabled:opacity-30"
-                            aria-label="Move step down"
-                          >
-                            <ArrowDown className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={form.steps.length === 1}
-                            onClick={() => removeStep(index)}
-                            className="rounded p-1 text-muted-foreground hover:bg-accent disabled:opacity-30"
-                            aria-label="Remove step"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <Label className="mb-0">Steps</Label>
+                      <Button type="button" size="sm" variant="ghost" onClick={addStep}>
+                        <Plus className="h-3.5 w-3.5" />
+                        Add step
+                      </Button>
+                    </div>
+                    <div className="mb-1 flex items-center gap-2 px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      <span className="w-5 shrink-0" />
+                      <span className="flex-1">Label</span>
+                      <span className="w-48 shrink-0">Approvers</span>
+                      <span className="w-20 shrink-0">Logic</span>
+                      <span className="w-28 shrink-0">Role</span>
+                      <span className="w-21 shrink-0" />
+                    </div>
+                    <div className="space-y-2">
+                      {form.steps.map((step, index) => (
+                        <div key={index} className="flex items-center gap-2 rounded-md border border-border p-2">
+                          <span className="w-5 shrink-0 text-center text-xs font-medium text-muted-foreground">
+                            {index + 1}
+                          </span>
+                          <Input
+                            placeholder="Step label"
+                            required
+                            className="flex-1 min-w-0"
+                            value={step.label}
+                            onChange={(e) => updateStep(index, { label: e.target.value })}
+                          />
+                          <StepApproversEditor
+                            approverIds={step.approverIds}
+                            approvers={APPROVERS}
+                            onChange={(patch) => updateStep(index, patch)}
+                          />
+                          <Select value={step.matchType} onValueChange={(v) => updateStep(index, { matchType: v as MatchType })}>
+                            <SelectTrigger className="w-20 shrink-0" />
+                            <SelectContent>
+                              <SelectItem value="AND">AND</SelectItem>
+                              <SelectItem value="OR">OR</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select value={step.role} onValueChange={(v) => updateStep(index, { role: v as StepRole })}>
+                            <SelectTrigger className="w-28 shrink-0" />
+                            <SelectContent>
+                              {STEP_ROLES.map((r) => (
+                                <SelectItem key={r} value={r}>
+                                  {r.charAt(0) + r.slice(1).toLowerCase()}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <div className="flex shrink-0 gap-1">
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => moveStep(index, -1)}
+                              className="rounded p-1 text-muted-foreground hover:bg-accent disabled:opacity-30"
+                              aria-label="Move step up"
+                            >
+                              <ArrowUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === form.steps.length - 1}
+                              onClick={() => moveStep(index, 1)}
+                              className="rounded p-1 text-muted-foreground hover:bg-accent disabled:opacity-30"
+                              aria-label="Move step down"
+                            >
+                              <ArrowDown className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={form.steps.length === 1}
+                              onClick={() => removeStep(index)}
+                              className="rounded p-1 text-muted-foreground hover:bg-accent disabled:opacity-30"
+                              aria-label="Remove step"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">{editing ? 'Save changes' : 'Create workflow'}</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">{editing ? 'Save changes' : 'Create workflow'}</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )
         }
       />
 
@@ -358,7 +364,7 @@ export function WorkflowsPage() {
             <Th>Steps</Th>
             <Th>SOWs</Th>
             <Th>Status</Th>
-            <Th className="w-10">&nbsp;</Th>
+            {!readOnly && <Th className="w-10">&nbsp;</Th>}
           </TableHead>
           <TableBody>
             {visible.map((workflow) => (
@@ -414,29 +420,31 @@ export function WorkflowsPage() {
                     {workflow.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </Td>
-                <Td>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={(e) => e.stopPropagation()}
-                        className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => openEdit(workflow)}>
-                        <Pencil className="mr-2 h-3.5 w-3.5" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600 hover:text-red-700" onClick={() => setDeleting(workflow)}>
-                        <Trash2 className="mr-2 h-3.5 w-3.5" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </Td>
+                {!readOnly && (
+                  <Td>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => openEdit(workflow)}>
+                          <Pencil className="mr-2 h-3.5 w-3.5" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600 hover:text-red-700" onClick={() => setDeleting(workflow)}>
+                          <Trash2 className="mr-2 h-3.5 w-3.5" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </Td>
+                )}
               </tr>
             ))}
           </TableBody>
@@ -551,7 +559,7 @@ export function WorkflowsPage() {
             <Button variant="outline" onClick={() => selectWorkflow(null)}>
               Close
             </Button>
-            <Button onClick={() => openEdit(selectedWorkflow)}>Edit Workflow</Button>
+            {!readOnly && <Button onClick={() => openEdit(selectedWorkflow)}>Edit Workflow</Button>}
           </div>
         </div>
       )}

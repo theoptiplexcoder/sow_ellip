@@ -19,12 +19,12 @@ export const PARTICIPANT_NAV_CONFIG: NavConfig = {
       href: '/participant/sows',
       icon: FileText,
       subItems: [
-          { label: 'All', href: '/admin/sows?status=ALL' },
-          { label: 'In review', href: '/admin/sows?status=IN_REVIEW' },
-          { label: 'Changes requested', href: '/admin/sows?status=CHANGES_REQUESTED' },
-          { label: 'Rejected', href: '/admin/sows?status=REJECTED' },
-          { label: 'Approval', href: '/admin/sows?status=APPROVED' },
-          { label: 'Draft', href: '/admin/sows?status=DRAFT' },
+          { label: 'All', href: '/participant/sows?status=ALL' },
+          { label: 'In review', href: '/participant/sows?status=IN_REVIEW' },
+          { label: 'Changes requested', href: '/participant/sows?status=CHANGES_REQUESTED' },
+          { label: 'Rejected', href: '/participant/sows?status=REJECTED' },
+          { label: 'Approval', href: '/participant/sows?status=APPROVED' },
+          { label: 'Draft', href: '/participant/sows?status=DRAFT' },
       ],
     },
     {

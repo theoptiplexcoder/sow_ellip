@@ -208,7 +208,11 @@ function clauseByKey(key: string) {
   return TEMPLATE_DOC.clauses.find((c) => c.key === key);
 }
 
-export function SowsPage() {
+interface SowsPageProps {
+  hideCreateButton?: boolean;
+}
+
+export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -290,10 +294,12 @@ export function SowsPage() {
           title="SOWs"
           description="Statements of Work across your organization's projects."
           actions={
-            <Button onClick={() => router.push('/tenantSlug/admin/sows/new')}>
-              <Plus className="h-4 w-4" />
-              New SOW
-            </Button>
+            !hideCreateButton && (
+              <Button onClick={() => router.push('/tenantSlug/admin/sows/new')}>
+                <Plus className="h-4 w-4" />
+                New SOW
+              </Button>
+            )
           }
         />
 

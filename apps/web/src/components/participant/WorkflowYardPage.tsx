@@ -174,24 +174,7 @@ export function WorkflowYardPage() {
     setSelectedTemplate((prev) => (prev?.id === id ? null : prev));
   }
 
-  function duplicateToMine(template: WorkflowTemplateRow) {
-    let name = `${template.name} (copy)`;
-    let n = 2;
-    while (templates.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
-      name = `${template.name} (copy ${n})`;
-      n += 1;
-    }
-    const copy: WorkflowTemplateRow = {
-      id: `t-${templates.length + 1}`,
-      name,
-      description: template.description,
-      steps: template.steps.map((s) => ({ ...s })),
-      ownerId: CURRENT_USER_ID,
-      ownerName: CURRENT_USER_NAME,
-    };
-    setTemplates((prev) => [...prev, copy]);
-    setSelectedTemplate(copy);
-  }
+
 
   function openUse(template: WorkflowTemplateRow) {
     setUseTarget(template);
@@ -206,7 +189,7 @@ export function WorkflowYardPage() {
     setUseTarget(null);
   }
 
-  const isOwn = selectedTemplate?.ownerId === CURRENT_USER_ID;
+
 
   return (
     <div className="flex items-start gap-6">
@@ -216,12 +199,6 @@ export function WorkflowYardPage() {
           description="Reusable workflow templates — from your organization, or your own."
           actions={
             <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreate}>
-                  <Plus className="h-4 w-4" />
-                  Create Workflow
-                </Button>
-              </DialogTrigger>
               <DialogContent title={editing ? 'Edit workflow template' : 'New workflow template'} className="max-w-2xl">
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   <div>
@@ -414,7 +391,7 @@ export function WorkflowYardPage() {
               <TableHead>
                 <Th>Template</Th>
                 <Th>Steps</Th>
-                <Th>Owner</Th>
+
                 <Th className="text-right">Actions</Th>
               </TableHead>
               <TableBody>
@@ -442,7 +419,7 @@ export function WorkflowYardPage() {
                     <Td>
                       <StepsPreview steps={template.steps} />
                     </Td>
-                    <Td className="text-muted-foreground">{template.ownerName}</Td>
+
                     <Td>
                       <div className="flex items-center justify-end gap-1">
                         <Button
@@ -456,18 +433,6 @@ export function WorkflowYardPage() {
                           <Play className="h-3.5 w-3.5" />
                           Use
                         </Button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            duplicateToMine(template);
-                          }}
-                          className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
-                          aria-label="Duplicate to mine"
-                          title="Duplicate to mine"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
                       </div>
                     </Td>
                   </tr>
@@ -477,88 +442,7 @@ export function WorkflowYardPage() {
           )}
         </div>
 
-        <div>
-          <div className="mb-3 flex items-center gap-2">
-            <UserIcon className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-foreground">Created by you</h2>
-            <span className="text-xs text-muted-foreground">Personal templates only you can reuse, edit, or delete.</span>
-          </div>
-          {myTemplates.length === 0 ? (
-            <EmptyState message={search ? 'No personal workflows match your search' : "You haven't created any workflows yet"} />
-          ) : (
-            <Table>
-              <TableHead>
-                <Th>Template</Th>
-                <Th>Steps</Th>
-                <Th className="text-right">Actions</Th>
-              </TableHead>
-              <TableBody>
-                {myTemplates.map((template) => (
-                  <tr
-                    key={template.id}
-                    className={`group cursor-pointer transition-colors hover:bg-muted/40 ${
-                      selectedTemplate?.id === template.id ? 'bg-muted/40' : ''
-                    }`}
-                    onClick={() => setSelectedTemplate(template)}
-                  >
-                    <Td>
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
-                          <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-foreground">{template.name}</div>
-                          {template.description && (
-                            <div className="text-xs text-muted-foreground">{template.description}</div>
-                          )}
-                        </div>
-                      </div>
-                    </Td>
-                    <Td>
-                      <StepsPreview steps={template.steps} />
-                    </Td>
-                    <Td>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openUse(template);
-                          }}
-                        >
-                          <Play className="h-3.5 w-3.5" />
-                          Use
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              onClick={(e) => e.stopPropagation()}
-                              className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => openEdit(template)}>
-                              <Pencil className="mr-2 h-3.5 w-3.5" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600 hover:text-red-700" onClick={() => setDeleting(template)}>
-                              <Trash2 className="mr-2 h-3.5 w-3.5" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </Td>
-                  </tr>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
+
       </div>
 
       <div
@@ -596,7 +480,7 @@ export function WorkflowYardPage() {
                 <div>
                   <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Owner</h3>
                   <p className="text-sm font-medium text-foreground">
-                    {isOwn ? 'You' : selectedTemplate.ownerName}
+                    {selectedTemplate.ownerId === CURRENT_USER_ID ? 'You' : selectedTemplate.ownerName}
                   </p>
                 </div>
               </div>
@@ -615,16 +499,6 @@ export function WorkflowYardPage() {
               <Button variant="ghost" onClick={() => setSelectedTemplate(null)}>
                 Close
               </Button>
-              {isOwn ? (
-                <Button variant="secondary" onClick={() => openEdit(selectedTemplate)}>
-                  Edit Template
-                </Button>
-              ) : (
-                <Button variant="secondary" onClick={() => duplicateToMine(selectedTemplate)}>
-                  <Copy className="h-4 w-4" />
-                  Duplicate to mine
-                </Button>
-              )}
               <Button onClick={() => openUse(selectedTemplate)}>
                 <Play className="h-4 w-4" />
                 Use
