@@ -11,14 +11,10 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { WorkflowDiagram } from '../admin/workflows/WorkflowDiagram';
+import { StepApproversEditor } from '../admin/workflows/StepApproversEditor';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
-
-type StepRole = 'APPROVER' | 'VIEWER';
-
-type Step = { label: string; approverId: string; role: StepRole };
-
-const STEP_ROLES: StepRole[] = ['APPROVER', 'VIEWER'];
+import { APPROVERS, STEP_ROLES, approverName, emptyStep, type MatchType, type Step, type StepRole } from '@sow/workflows';
 
 type WorkflowTemplateRow = {
   id: string;
@@ -28,11 +24,6 @@ type WorkflowTemplateRow = {
   ownerId: string;
   ownerName: string;
 };
-
-const APPROVERS = [
-  { id: 'u-3', name: 'Dana Wu' },
-  { id: 'u-4', name: 'Jordan Lee' },
-];
 
 const CURRENT_USER_ID = 'u-2';
 const CURRENT_USER_NAME = 'Sam Okafor';
@@ -50,8 +41,8 @@ const INITIAL_TEMPLATES: WorkflowTemplateRow[] = [
     name: 'Standard SOW Approval',
     description: 'General 2-step approval for standard Statements of Work.',
     steps: [
-      { label: 'Manager review', approverId: 'u-3', role: 'APPROVER' },
-      { label: 'Finance sign-off', approverId: 'u-4', role: 'VIEWER' },
+      { label: 'Manager review', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' },
+      { label: 'Finance sign-off', approverIds: ['u-4'], matchType: 'AND', role: 'VIEWER' },
     ],
     ownerId: 'u-1',
     ownerName: ADMIN_NAME,
@@ -60,7 +51,7 @@ const INITIAL_TEMPLATES: WorkflowTemplateRow[] = [
     id: 't-2',
     name: 'Quick Approval',
     description: 'Fast track single-step approval.',
-    steps: [{ label: 'Director approval', approverId: 'u-3', role: 'APPROVER' }],
+    steps: [{ label: 'Director approval', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' }],
     ownerId: 'u-1',
     ownerName: ADMIN_NAME,
   },
@@ -68,20 +59,16 @@ const INITIAL_TEMPLATES: WorkflowTemplateRow[] = [
     id: 't-3',
     name: 'Retainer fast-track',
     description: 'My go-to for small recurring retainer renewals.',
-    steps: [{ label: 'Client sign-off', approverId: 'u-4', role: 'APPROVER' }],
+    steps: [{ label: 'Client sign-off', approverIds: ['u-4'], matchType: 'AND', role: 'APPROVER' }],
     ownerId: CURRENT_USER_ID,
     ownerName: CURRENT_USER_NAME,
   },
 ];
 
-function approverName(id: string) {
-  return APPROVERS.find((a) => a.id === id)?.name ?? 'Unknown';
-}
-
 const emptyForm = {
   name: '',
   description: '',
-  steps: [{ label: '', approverId: APPROVERS[0].id, role: STEP_ROLES[0] }] as Step[],
+  steps: [emptyStep()] as Step[],
 };
 
 function StepsPreview({ steps }: { steps: Step[] }) {
@@ -125,7 +112,7 @@ export function WorkflowYardPage() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ name: '', description: '', steps: [{ label: '', approverId: APPROVERS[0].id, role: STEP_ROLES[0] }] });
+    setForm({ name: '', description: '', steps: [emptyStep()] });
     setNameError(null);
     setOpen(true);
   }
@@ -138,7 +125,7 @@ export function WorkflowYardPage() {
   }
 
   function addStep() {
-    setForm((f) => ({ ...f, steps: [...f.steps, { label: '', approverId: APPROVERS[0].id, role: STEP_ROLES[0] }] }));
+    setForm((f) => ({ ...f, steps: [...f.steps, emptyStep()] }));
   }
 
   function removeStep(index: number) {
@@ -152,7 +139,8 @@ export function WorkflowYardPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = form.name.trim();
-    if (!trimmed || form.steps.length === 0 || form.steps.some((s) => !s.label.trim())) return;
+    if (!trimmed || form.steps.length === 0 || form.steps.some((s) => !s.label.trim() || s.approverIds.length === 0))
+      return;
     const duplicate = templates.some(
       (t) => t.name.toLowerCase() === trimmed.toLowerCase() && t.id !== editing?.id,
     );
@@ -234,7 +222,7 @@ export function WorkflowYardPage() {
                   Create Workflow
                 </Button>
               </DialogTrigger>
-              <DialogContent title={editing ? 'Edit workflow template' : 'New workflow template'} className="max-w-xl">
+              <DialogContent title={editing ? 'Edit workflow template' : 'New workflow template'} className="max-w-2xl">
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   <div>
                     <Label htmlFor="template-name">Name</Label>
@@ -266,6 +254,14 @@ export function WorkflowYardPage() {
                         Add step
                       </Button>
                     </div>
+                    <div className="mb-1 flex items-center gap-2 px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      <span className="w-5 shrink-0" />
+                      <span className="flex-1">Label</span>
+                      <span className="w-48 shrink-0">Approvers</span>
+                      <span className="w-20 shrink-0">Logic</span>
+                      <span className="w-28 shrink-0">Role</span>
+                      <span className="w-6 shrink-0" />
+                    </div>
                     <div className="space-y-2">
                       {form.steps.map((step, index) => (
                         <div key={index} className="flex items-center gap-2 rounded-md border border-border p-2">
@@ -275,17 +271,20 @@ export function WorkflowYardPage() {
                           <Input
                             placeholder="Step label"
                             required
+                            className="flex-1 min-w-0"
                             value={step.label}
                             onChange={(e) => updateStep(index, { label: e.target.value })}
                           />
-                          <Select value={step.approverId} onValueChange={(v) => updateStep(index, { approverId: v })}>
-                            <SelectTrigger className="w-36 shrink-0" />
+                          <StepApproversEditor
+                            approverIds={step.approverIds}
+                            approvers={APPROVERS}
+                            onChange={(patch) => updateStep(index, patch)}
+                          />
+                          <Select value={step.matchType} onValueChange={(v) => updateStep(index, { matchType: v as MatchType })}>
+                            <SelectTrigger className="w-20 shrink-0" />
                             <SelectContent>
-                              {APPROVERS.map((a) => (
-                                <SelectItem key={a.id} value={a.id}>
-                                  {a.name}
-                                </SelectItem>
-                              ))}
+                              <SelectItem value="AND">AND</SelectItem>
+                              <SelectItem value="OR">OR</SelectItem>
                             </SelectContent>
                           </Select>
                           <Select value={step.role} onValueChange={(v) => updateStep(index, { role: v as StepRole })}>

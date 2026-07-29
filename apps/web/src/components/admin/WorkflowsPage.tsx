@@ -12,14 +12,10 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { WorkflowDiagram } from './workflows/WorkflowDiagram';
+import { StepApproversEditor } from './workflows/StepApproversEditor';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
-
-type StepRole = 'APPROVER' | 'VIEWER';
-
-type Step = { label: string; approverId: string; role: StepRole };
-
-const STEP_ROLES: StepRole[] = ['APPROVER', 'VIEWER'];
+import { APPROVERS, STEP_ROLES, approverName, emptyStep, type MatchType, type Step, type StepRole } from '@sow/workflows';
 
 type SowLink = {
   id: string;
@@ -39,11 +35,6 @@ type WorkflowRow = {
   sows: SowLink[];
 };
 
-const APPROVERS = [
-  { id: 'u-3', name: 'Dana Wu' },
-  { id: 'u-4', name: 'Jordan Lee' },
-];
-
 const INITIAL_WORKFLOWS: WorkflowRow[] = [
   {
     id: 'w-1',
@@ -51,8 +42,8 @@ const INITIAL_WORKFLOWS: WorkflowRow[] = [
     description: 'Manager review, then finance sign-off.',
     isActive: true,
     steps: [
-      { label: 'Manager review', approverId: 'u-3', role: 'APPROVER' },
-      { label: 'Finance sign-off', approverId: 'u-4', role: 'VIEWER' },
+      { label: 'Manager review', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' },
+      { label: 'Finance sign-off', approverIds: ['u-4'], matchType: 'AND', role: 'VIEWER' },
     ],
     sows: [
       { id: 's-1', sowNumber: 'SOW-1042', title: 'Website revamp — Phase 1', currentStep: 2 },
@@ -63,19 +54,42 @@ const INITIAL_WORKFLOWS: WorkflowRow[] = [
     id: 'w-2',
     name: 'Single approver',
     isActive: false,
-    steps: [{ label: 'Director approval', approverId: 'u-3', role: 'APPROVER' }],
+    steps: [{ label: 'Director approval', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' }],
     sows: [{ id: 's-3', sowNumber: 'SOW-1055', title: 'Support retainer renewal', currentStep: 0 }],
   },
+  {
+    id: 'w-3',
+    name: 'Joint sign-off (AND)',
+    description: 'Both Dana and Jordan must approve before it moves forward.',
+    isActive: true,
+    steps: [{ label: 'Joint review', approverIds: ['u-3', 'u-4'], matchType: 'AND', role: 'APPROVER' }],
+    sows: [{ id: 's-5', sowNumber: 'SOW-1060', title: 'Joint sign-off demo', currentStep: 1 }],
+  },
+  {
+    id: 'w-4',
+    name: 'Either approver (OR)',
+    description: 'Either Dana or Jordan can approve — whichever is available first.',
+    isActive: true,
+    steps: [{ label: 'Backup review', approverIds: ['u-3', 'u-4'], matchType: 'OR', role: 'APPROVER', approvedBy: ['u-4'] }],
+    sows: [{ id: 's-6', sowNumber: 'SOW-1061', title: 'Either approver demo', currentStep: 1 }],
+  },
+  {
+    id: 'w-5',
+    name: 'Mixed conditions (AND + OR)',
+    description: 'Joint review requires both, final sign-off accepts either.',
+    isActive: true,
+    steps: [
+      { label: 'Joint review', approverIds: ['u-3', 'u-4'], matchType: 'AND', role: 'APPROVER' },
+      { label: 'Final sign-off', approverIds: ['u-3', 'u-4'], matchType: 'OR', role: 'APPROVER', approvedBy: ['u-3'] },
+    ],
+    sows: [{ id: 's-7', sowNumber: 'SOW-1062', title: 'Mixed conditions demo', currentStep: 2 }],
+  },
 ];
-
-function approverName(id: string) {
-  return APPROVERS.find((a) => a.id === id)?.name ?? 'Unknown';
-}
 
 const emptyForm = {
   name: '',
   description: '',
-  steps: [{ label: '', approverId: APPROVERS[0].id, role: STEP_ROLES[0] }] as Step[],
+  steps: [emptyStep()] as Step[],
 };
 
 export function WorkflowsPage() {
@@ -103,7 +117,7 @@ export function WorkflowsPage() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ name: '', description: '', steps: [{ label: '', approverId: APPROVERS[0].id, role: STEP_ROLES[0] }] });
+    setForm({ name: '', description: '', steps: [emptyStep()] });
     setNameError(null);
     setOpen(true);
   }
@@ -116,7 +130,7 @@ export function WorkflowsPage() {
   }
 
   function addStep() {
-    setForm((f) => ({ ...f, steps: [...f.steps, { label: '', approverId: APPROVERS[0].id, role: STEP_ROLES[0] }] }));
+    setForm((f) => ({ ...f, steps: [...f.steps, emptyStep()] }));
   }
 
   function removeStep(index: number) {
@@ -140,7 +154,8 @@ export function WorkflowsPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = form.name.trim();
-    if (!trimmed || form.steps.length === 0 || form.steps.some((s) => !s.label.trim())) return;
+    if (!trimmed || form.steps.length === 0 || form.steps.some((s) => !s.label.trim() || s.approverIds.length === 0))
+      return;
     const duplicate = workflows.some(
       (w) => w.name.toLowerCase() === trimmed.toLowerCase() && w.id !== editing?.id,
     );
@@ -182,7 +197,7 @@ export function WorkflowsPage() {
                 New workflow
               </Button>
             </DialogTrigger>
-            <DialogContent title={editing ? 'Edit workflow' : 'New workflow'} className="max-w-xl">
+            <DialogContent title={editing ? 'Edit workflow' : 'New workflow'} className="max-w-2xl">
               <form className="space-y-4" onSubmit={handleSubmit}>
                 <div>
                   <Label htmlFor="workflow-name">Name</Label>
@@ -214,6 +229,14 @@ export function WorkflowsPage() {
                       Add step
                     </Button>
                   </div>
+                  <div className="mb-1 flex items-center gap-2 px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <span className="w-5 shrink-0" />
+                    <span className="flex-1">Label</span>
+                    <span className="w-48 shrink-0">Approvers</span>
+                    <span className="w-20 shrink-0">Logic</span>
+                    <span className="w-28 shrink-0">Role</span>
+                    <span className="w-21 shrink-0" />
+                  </div>
                   <div className="space-y-2">
                     {form.steps.map((step, index) => (
                       <div key={index} className="flex items-center gap-2 rounded-md border border-border p-2">
@@ -223,17 +246,20 @@ export function WorkflowsPage() {
                         <Input
                           placeholder="Step label"
                           required
+                          className="flex-1 min-w-0"
                           value={step.label}
                           onChange={(e) => updateStep(index, { label: e.target.value })}
                         />
-                        <Select value={step.approverId} onValueChange={(v) => updateStep(index, { approverId: v })}>
-                          <SelectTrigger className="w-36 shrink-0" />
+                        <StepApproversEditor
+                          approverIds={step.approverIds}
+                          approvers={APPROVERS}
+                          onChange={(patch) => updateStep(index, patch)}
+                        />
+                        <Select value={step.matchType} onValueChange={(v) => updateStep(index, { matchType: v as MatchType })}>
+                          <SelectTrigger className="w-20 shrink-0" />
                           <SelectContent>
-                            {APPROVERS.map((a) => (
-                              <SelectItem key={a.id} value={a.id}>
-                                {a.name}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="AND">AND</SelectItem>
+                            <SelectItem value="OR">OR</SelectItem>
                           </SelectContent>
                         </Select>
                         <Select value={step.role} onValueChange={(v) => updateStep(index, { role: v as StepRole })}>
