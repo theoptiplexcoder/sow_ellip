@@ -1,5 +1,10 @@
+import { Suspense } from 'react';
 import { SowsYardPage } from '../../../../../../components/participant/SowsYardPage';
 
 export default function ParticipantSowsYardPage() {
-  return <SowsYardPage />;
+  return (
+    <Suspense fallback={null}>
+      <SowsYardPage />
+    </Suspense>
+  );
 }
