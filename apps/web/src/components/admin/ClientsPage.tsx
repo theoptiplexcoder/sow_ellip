@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Plus, Search, MoreHorizontal, Pencil, Archive, FolderKanban, X } from 'lucide-react';
 import { PageHeader } from '../ui/page-header';
 import { Button } from '../ui/button';
@@ -93,6 +94,17 @@ export function ClientsPage() {
   const [search, setSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState<ClientRow | null>(null);
   const { width: sidebarWidth, startResize } = useResizableWidth(640, 280, 640);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('create') === '1') {
+      openCreate();
+      router.replace(pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const visible = clients.filter(
     (c) =>
@@ -278,6 +290,7 @@ export function ClientsPage() {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
+                        id={`client-actions-${client.id}`}
                         onClick={(e) => e.stopPropagation()}
                         className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
                       >

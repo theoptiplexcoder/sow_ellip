@@ -137,6 +137,7 @@ export function TemplatesPage() {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
+                        id={`template-actions-${template.id}`}
                         onClick={(e) => e.stopPropagation()}
                         className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
                       >

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { Menu, PanelLeftClose, PanelLeftOpen, Sun, Moon, Search, Settings, Plus, FileText, FolderKanban, GitPullRequest, Users } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../../../components/ui/dropdown-menu';
 
@@ -20,6 +21,11 @@ export function Navbar({
   userInitials: string;
 }) {
   const [isDark, setIsDark] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const segments = pathname.split('/').filter(Boolean);
+  const basePath = segments.length >= 2 ? `/${segments[0]}/${segments[1]}` : '/tenantSlug/admin';
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -75,43 +81,50 @@ export function Navbar({
             className="w-full rounded-md border border-border bg-muted/50 py-1.5 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
           />
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Create</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem>
-              <Users className="mr-2 h-4 w-4" />
-              <span>New client</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <FolderKanban className="mr-2 h-4 w-4" />
-              <span>New project</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <FileText className="mr-2 h-4 w-4" />
-              <span>New SOW</span>
-            </DropdownMenuItem>
-            {roleLabel !== 'SOW Participant' && (
-              <>
-                <DropdownMenuItem>
-                  <FileText className="mr-2 h-4 w-4" />
-                  <span>New Template</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <GitPullRequest className="mr-2 h-4 w-4" />
-                  <span>New Workflow</span>
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {roleLabel !== 'Client' && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                id="navbar-create-trigger"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Create</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => router.push(roleLabel === 'SOW Participant' ? `${basePath}/sows/yard` : `${basePath}/sows/new`)}>
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Create SOW</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push(roleLabel === 'SOW Participant' ? `${basePath}/workflows/yard` : `${basePath}/workflowyard`)}>
+                <GitPullRequest className="mr-2 h-4 w-4" />
+                <span>Publish SOW to Workflow</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push(`${basePath}/clients?create=1`)}>
+                <Users className="mr-2 h-4 w-4" />
+                <span>New client</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push(`${basePath}/projects?create=1`)}>
+                <FolderKanban className="mr-2 h-4 w-4" />
+                <span>New project</span>
+              </DropdownMenuItem>
+              {roleLabel !== 'SOW Participant' && (
+                <>
+                  <DropdownMenuItem onClick={() => router.push('/tenantSlug/admin/sows/new')}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>New SOW Template</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push(`${basePath}/workflows?create=1`)}>
+                    <GitPullRequest className="mr-2 h-4 w-4" />
+                    <span>New Workflow</span>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Right Controls: Dark/Light Mode, Settings, Profile */}

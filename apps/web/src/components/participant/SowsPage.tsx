@@ -11,17 +11,39 @@ import { Table, TableHead, TableBody, Th, Td, EmptyState } from '../ui/table';
 import { Input } from '../ui/input';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
-import { useTemplateStore } from './sows/templateStore';
-import { LivePreview } from './sows/builder/LivePreview';
-import { ADMIN_SOWS, type SowRow, type SowStatus as Status } from './sows/sowData';
+import { useTemplateStore } from '../admin/sows/templateStore';
+import { LivePreview } from '../admin/sows/builder/LivePreview';
+
+type Status = 'DRAFT' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'REJECTED' | 'APPROVED' | 'PUBLISHED';
+
+type SowRow = {
+  id: string;
+  sowNumber: string;
+  title: string;
+  project: string;
+  status: Status;
+  version: number;
+  updatedAt: string;
+  description: string;
+  templateId: string;
+  awaitingApproval?: boolean;
+};
 
 const STATUS_LABEL: Record<Status, string> = {
   DRAFT: 'Draft',
+  IN_REVIEW: 'In review',
+  CHANGES_REQUESTED: 'Changes requested',
+  REJECTED: 'Rejected',
+  APPROVED: 'Approved',
   PUBLISHED: 'Published',
 };
 
 const STATUS_TONE: Record<Status, 'neutral' | 'info' | 'warning' | 'danger' | 'success'> = {
   DRAFT: 'neutral',
+  IN_REVIEW: 'info',
+  CHANGES_REQUESTED: 'warning',
+  REJECTED: 'danger',
+  APPROVED: 'success',
   PUBLISHED: 'success',
 };
 
@@ -35,11 +57,71 @@ function statusToneFor(sow: SowRow): 'neutral' | 'info' | 'warning' | 'danger' |
 
 const STATUS_FILTERS: { label: string; value: 'ALL' | Status }[] = [
   { label: 'All', value: 'ALL' },
-  { label: 'Published', value: 'PUBLISHED' },
+  { label: 'In review', value: 'IN_REVIEW' },
+  { label: 'Changes requested', value: 'CHANGES_REQUESTED' },
+  { label: 'Rejected', value: 'REJECTED' },
+  { label: 'Approval', value: 'APPROVED' },
   { label: 'Draft', value: 'DRAFT' },
 ];
 
-const SOWS: SowRow[] = ADMIN_SOWS;
+const SOWS: SowRow[] = [
+  {
+    id: 's-1',
+    sowNumber: 'SOW-1042',
+    title: 'Website revamp — Phase 1',
+    project: 'Website revamp',
+    status: 'IN_REVIEW',
+    version: 2,
+    updatedAt: '2026-07-20',
+    description: 'Redesign and rebuild of the client-facing marketing site, including a new component library, CMS integration, and a phased content migration from the legacy platform.',
+    templateId: 't-1',
+  },
+  {
+    id: 's-2',
+    sowNumber: 'SOW-1051',
+    title: 'Data migration plan',
+    project: 'Data migration',
+    status: 'CHANGES_REQUESTED',
+    version: 1,
+    updatedAt: '2026-07-25',
+    description: 'Migration of production data from the legacy on-prem warehouse to the new cloud data platform, covering schema mapping, validation, and a zero-downtime cutover plan.',
+    templateId: 't-2',
+  },
+  {
+    id: 's-3',
+    sowNumber: 'SOW-1055',
+    title: 'Support retainer renewal',
+    project: 'Support retainer',
+    status: 'REJECTED',
+    version: 1,
+    updatedAt: '2026-07-27',
+    description: 'Renewal of the ongoing monthly support retainer covering bug fixes, minor enhancements, and on-call incident response for the client\'s existing platform.',
+    templateId: 't-3',
+  },
+  {
+    id: 's-4',
+    sowNumber: 'SOW-1048',
+    title: 'Phase 2 scope addendum',
+    project: 'Website revamp',
+    status: 'APPROVED',
+    version: 1,
+    updatedAt: '2026-07-18',
+    description: 'Addendum covering additional Phase 2 deliverables for the website revamp, including a client portal login and account management screens not in the original scope.',
+    templateId: 't-1',
+  },
+  {
+    id: 's-5',
+    sowNumber: 'SOW-1060',
+    title: 'Cloud infrastructure migration',
+    project: 'Cloud migration',
+    status: 'DRAFT',
+    version: 1,
+    updatedAt: '2026-07-29',
+    description: 'Migration of core services to the new cloud infrastructure provider, including networking setup, security hardening, and a phased service cutover. Awaiting participant approval before work begins.',
+    templateId: 't-2',
+    awaitingApproval: true,
+  },
+];
 
 type ReviewerComment = {
   id: string;
@@ -50,6 +132,22 @@ type ReviewerComment = {
 };
 
 const COMMENTS_BY_SOW: Record<string, ReviewerComment[]> = {
+  's-2': [
+    {
+      id: 'c-3',
+      author: 'Dana Wu',
+      initials: 'DW',
+      text: 'The cutover plan is missing the rollback steps. We need a clear procedure in case the migration fails midway.',
+      postedAt: '3h ago',
+    },
+    {
+      id: 'c-4',
+      author: 'Jordan Lee',
+      initials: 'JL',
+      text: 'Also, please specify the exact timing for the downtime window. Is it scheduled for the weekend?',
+      postedAt: '1h ago',
+    },
+  ],
   's-4': [
     {
       id: 'c-1',
@@ -131,12 +229,20 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
   function handleDecision(sowId: string, newStatus: Status, actionLabel: string) {
     if (!commentDraft.trim()) return;
     logComment(sowId, `${actionLabel}: ${commentDraft.trim()}`);
+    if (newStatus === 'PUBLISHED') {
+      const segments = pathname.split('/').filter(Boolean);
+      const basePath = segments.length >= 2 ? `/${segments[0]}/${segments[1]}` : '/tenantSlug/participant';
+      router.push(`${basePath}/workflows/yard`);
+      return;
+    }
     setSows((prev) => prev.map((s) => (s.id === sowId ? { ...s, status: newStatus } : s)));
     setCommentDraft('');
   }
 
   function handlePublishSow(sowId: string) {
-    setSows((prev) => prev.map((s) => (s.id === sowId ? { ...s, status: 'PUBLISHED' } : s)));
+    const segments = pathname.split('/').filter(Boolean);
+    const basePath = segments.length >= 2 ? `/${segments[0]}/${segments[1]}` : '/tenantSlug/participant';
+    router.push(`${basePath}/workflows/yard`);
   }
 
   const visible = sows.filter(
@@ -310,7 +416,11 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                     key={selectedSow.id}
                     schema={selectedTemplate.jsonSchema}
                     uiSchema={selectedTemplate.uiSchema}
-                    defaultValues={{}}
+                    defaultValues={{
+                      projectTitle: selectedSow.project,
+                      projectDescription: selectedSow.description,
+                      overview: 'Overview content for ' + selectedSow.title
+                    }}
                   />
                 ) : (
                   <EmptyState message="No template linked to this SOW" />

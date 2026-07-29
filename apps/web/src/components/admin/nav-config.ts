@@ -38,11 +38,7 @@ export const DASHBOARD_ROLES: Record<
         href: '/admin/sows',
         icon: FileText,
         subItems: [
-          { label: 'All', href: '/admin/sows?status=ALL' },
-          { label: 'In review', href: '/admin/sows?status=IN_REVIEW' },
-          { label: 'Changes requested', href: '/admin/sows?status=CHANGES_REQUESTED' },
-          { label: 'Rejected', href: '/admin/sows?status=REJECTED' },
-          { label: 'Approval', href: '/admin/sows?status=APPROVED' },
+          { label: 'Published', href: '/admin/sows?status=PUBLISHED' },
           { label: 'Draft', href: '/admin/sows?status=DRAFT' },
         ],
       },
@@ -51,8 +47,8 @@ export const DASHBOARD_ROLES: Record<
         href: '/admin/workflows',
         icon: GitPullRequest,
         subItems: [
-          { label: 'Active Workflows', href: '/admin/workflows' },
-          { label: 'Workflow Yard', href: '/admin/workflowyard' },
+          { label: 'Published', href: '/admin/workflows?status=PUBLISHED' },
+          { label: 'Draft', href: '/admin/workflowyard?status=DRAFT' },
         ],
       },
       { label: 'Audit Log', href: '/admin/auditlogs', icon: History },

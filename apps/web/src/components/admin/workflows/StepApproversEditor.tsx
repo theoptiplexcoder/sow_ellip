@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown } from 'lucide-react';
-import type { Approver } from '@sow/workflows';
+import { matchTypeForApproverCount, type Approver, type MatchType } from '@sow/workflows';
 import { Popover, PopoverTrigger, PopoverContent } from '../../ui/popover';
 import { Checkbox } from '../../ui/checkbox';
 import { cn } from '../../../lib/cn';
@@ -9,21 +9,23 @@ import { cn } from '../../../lib/cn';
 export function StepApproversEditor({
   approverIds,
   approvers,
+  matchType,
   onChange,
   className,
 }: {
   approverIds: string[];
   approvers: Approver[];
-  onChange: (patch: { approverIds: string[] }) => void;
+  matchType: MatchType;
+  onChange: (patch: { approverIds: string[]; matchType: MatchType }) => void;
   className?: string;
 }) {
   function toggle(id: string) {
     const next = approverIds.includes(id) ? approverIds.filter((a) => a !== id) : [...approverIds, id];
-    onChange({ approverIds: next });
+    onChange({ approverIds: next, matchType: matchTypeForApproverCount(next.length, matchType) });
   }
 
   const names = approverIds.map((id) => approvers.find((a) => a.id === id)?.name ?? 'Unknown');
-  const summary = names.length === 0 ? 'Select employees' : names.length === 1 ? names[0] : `${names.length} employees`;
+  const summary = names.length === 0 ? 'Select employees' : names.join(` ${matchType} `);
 
   return (
     <Popover>

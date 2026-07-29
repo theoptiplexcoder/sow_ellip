@@ -16,15 +16,14 @@ export const PARTICIPANT_NAV_CONFIG: NavConfig = {
     { label: 'Projects', href: '/participant/projects', icon: FolderKanban },
     {
       label: 'SOWs',
-      href: '/participant/sows',
+      href: '/participant/sows/yard',
       icon: FileText,
       subItems: [
-          { label: 'All', href: '/participant/sows?status=ALL' },
-          { label: 'In review', href: '/participant/sows?status=IN_REVIEW' },
-          { label: 'Changes requested', href: '/participant/sows?status=CHANGES_REQUESTED' },
-          { label: 'Rejected', href: '/participant/sows?status=REJECTED' },
-          { label: 'Approval', href: '/participant/sows?status=APPROVED' },
-          { label: 'Draft', href: '/participant/sows?status=DRAFT' },
+        { label: 'All', href: '/participant/sows/yard?status=ALL' },
+        { label: 'In review', href: '/participant/sows/yard?status=IN_REVIEW' },
+        { label: 'Changes requested', href: '/participant/sows/yard?status=CHANGES_REQUESTED' },
+        { label: 'Rejected', href: '/participant/sows/yard?status=REJECTED' },
+        { label: 'Approved', href: '/participant/sows/yard?status=APPROVED' },
       ],
     },
     {

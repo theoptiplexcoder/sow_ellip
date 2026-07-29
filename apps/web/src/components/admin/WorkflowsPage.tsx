@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Plus, ArrowUp, ArrowDown, X, Search, MoreHorizontal, Pencil, Zap, Trash2, FileText } from 'lucide-react';
 import { PageHeader } from '../ui/page-header';
 import { Button } from '../ui/button';
@@ -15,7 +16,7 @@ import { WorkflowDiagram } from './workflows/WorkflowDiagram';
 import { StepApproversEditor } from './workflows/StepApproversEditor';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
-import { APPROVERS, STEP_ROLES, approverName, emptyStep, type MatchType, type Step, type StepRole } from '@sow/workflows';
+import { APPROVERS, STEP_ROLES, approverName, approverDesignation, emptyStep, matchTypeForApproverCount, type MatchType, type Step, type StepRole } from '@sow/workflows';
 
 type SowLink = {
   id: string;
@@ -25,11 +26,13 @@ type SowLink = {
   currentStep: number;
 };
 
+type Status = 'PUBLISHED' | 'DRAFT';
+
 type WorkflowRow = {
   id: string;
   name: string;
   description?: string;
-  isActive: boolean;
+  status: Status;
   steps: Step[];
   /** A workflow can be reused across multiple SOWs, each progressing through it independently. */
   sows: SowLink[];
@@ -40,7 +43,7 @@ const INITIAL_WORKFLOWS: WorkflowRow[] = [
     id: 'w-1',
     name: 'Standard 2-step',
     description: 'Manager review, then finance sign-off.',
-    isActive: true,
+    status: 'PUBLISHED',
     steps: [
       { label: 'Manager review', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' },
       { label: 'Finance sign-off', approverIds: ['u-4'], matchType: 'AND', role: 'VIEWER' },
@@ -53,7 +56,7 @@ const INITIAL_WORKFLOWS: WorkflowRow[] = [
   {
     id: 'w-2',
     name: 'Single approver',
-    isActive: false,
+    status: 'DRAFT',
     steps: [{ label: 'Director approval', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' }],
     sows: [{ id: 's-3', sowNumber: 'SOW-1055', title: 'Support retainer renewal', currentStep: 0 }],
   },
@@ -61,7 +64,7 @@ const INITIAL_WORKFLOWS: WorkflowRow[] = [
     id: 'w-3',
     name: 'Joint sign-off (AND)',
     description: 'Both Dana and Jordan must approve before it moves forward.',
-    isActive: true,
+    status: 'PUBLISHED',
     steps: [{ label: 'Joint review', approverIds: ['u-3', 'u-4'], matchType: 'AND', role: 'APPROVER' }],
     sows: [{ id: 's-5', sowNumber: 'SOW-1060', title: 'Joint sign-off demo', currentStep: 1 }],
   },
@@ -69,7 +72,7 @@ const INITIAL_WORKFLOWS: WorkflowRow[] = [
     id: 'w-4',
     name: 'Either approver (OR)',
     description: 'Either Dana or Jordan can approve — whichever is available first.',
-    isActive: true,
+    status: 'PUBLISHED',
     steps: [{ label: 'Backup review', approverIds: ['u-3', 'u-4'], matchType: 'OR', role: 'APPROVER', approvedBy: ['u-4'] }],
     sows: [{ id: 's-6', sowNumber: 'SOW-1061', title: 'Either approver demo', currentStep: 1 }],
   },
@@ -77,7 +80,7 @@ const INITIAL_WORKFLOWS: WorkflowRow[] = [
     id: 'w-5',
     name: 'Mixed conditions (AND + OR)',
     description: 'Joint review requires both, final sign-off accepts either.',
-    isActive: true,
+    status: 'PUBLISHED',
     steps: [
       { label: 'Joint review', approverIds: ['u-3', 'u-4'], matchType: 'AND', role: 'APPROVER' },
       { label: 'Final sign-off', approverIds: ['u-3', 'u-4'], matchType: 'OR', role: 'APPROVER', approvedBy: ['u-3'] },
@@ -107,16 +110,31 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRow | null>(null);
   const [selectedSowId, setSelectedSowId] = useState<string | null>(null);
   const { width: sidebarWidth, startResize } = useResizableWidth(720, 360, 720);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (!readOnly && searchParams.get('create') === '1') {
+      openCreate();
+      router.replace(pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   function selectWorkflow(workflow: WorkflowRow | null) {
     setSelectedWorkflow(workflow);
     setSelectedSowId(null);
   }
 
+  const statusQuery = searchParams.get('status');
+  const statusFilter = (statusQuery as 'ALL' | Status) || 'ALL';
+
   const visible = workflows.filter(
     (w) =>
-      w.name.toLowerCase().includes(search.toLowerCase()) ||
-      (w.description && w.description.toLowerCase().includes(search.toLowerCase())),
+      (statusFilter === 'ALL' || w.status === statusFilter) &&
+      (w.name.toLowerCase().includes(search.toLowerCase()) ||
+        (w.description && w.description.toLowerCase().includes(search.toLowerCase()))),
   );
 
   function openCreate() {
@@ -128,7 +146,11 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
 
   function openEdit(workflow: WorkflowRow) {
     setEditing(workflow);
-    setForm({ name: workflow.name, description: workflow.description ?? '', steps: workflow.steps.map((s) => ({ ...s })) });
+    setForm({
+      name: workflow.name,
+      description: workflow.description ?? '',
+      steps: workflow.steps.map((s) => ({ ...s, matchType: matchTypeForApproverCount(s.approverIds.length, s.matchType) })),
+    });
     setNameError(null);
     setOpen(true);
   }
@@ -174,7 +196,7 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
     } else {
       setWorkflows((prev) => [
         ...prev,
-        { id: `w-${prev.length + 1}`, name: trimmed, description: form.description, isActive: true, steps: form.steps, currentStep: 0, sows: [] },
+        { id: `w-${prev.length + 1}`, name: trimmed, description: form.description, status: 'DRAFT', steps: form.steps, currentStep: 0, sows: [] },
       ]);
     }
     setOpen(false);
@@ -185,7 +207,11 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
     setDeleting(null);
   }
 
-  const activeCount = workflows.filter((w) => w.isActive).length;
+  function handlePublishWorkflow(id: string) {
+    setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, status: 'PUBLISHED' } : w)));
+  }
+
+  const publishedCount = workflows.filter((w) => w.status === 'PUBLISHED').length;
 
   return (
     <div className="flex items-start gap-6">
@@ -258,13 +284,24 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
                           <StepApproversEditor
                             approverIds={step.approverIds}
                             approvers={APPROVERS}
+                            matchType={step.matchType}
                             onChange={(patch) => updateStep(index, patch)}
                           />
-                          <Select value={step.matchType} onValueChange={(v) => updateStep(index, { matchType: v as MatchType })}>
+                          <Select
+                            value={step.matchType}
+                            onValueChange={(v) => updateStep(index, { matchType: v as MatchType })}
+                            disabled={step.approverIds.length <= 1}
+                          >
                             <SelectTrigger className="w-20 shrink-0" />
                             <SelectContent>
-                              <SelectItem value="AND">AND</SelectItem>
-                              <SelectItem value="OR">OR</SelectItem>
+                              {step.approverIds.length <= 1 ? (
+                                <SelectItem value="NA">NA</SelectItem>
+                              ) : (
+                                <>
+                                  <SelectItem value="AND">AND</SelectItem>
+                                  <SelectItem value="OR">OR</SelectItem>
+                                </>
+                              )}
                             </SelectContent>
                           </Select>
                           <Select value={step.role} onValueChange={(v) => updateStep(index, { role: v as StepRole })}>
@@ -351,7 +388,7 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
           />
         </div>
         <span className="text-sm text-muted-foreground">
-          {activeCount} active · {workflows.length - activeCount} inactive
+          {publishedCount} published · {workflows.length - publishedCount} draft
         </span>
       </div>
 
@@ -416,8 +453,8 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
                   )}
                 </Td>
                 <Td>
-                  <Badge tone={workflow.isActive ? 'success' : 'neutral'}>
-                    {workflow.isActive ? 'Active' : 'Inactive'}
+                  <Badge tone={workflow.status === 'PUBLISHED' ? 'success' : 'neutral'}>
+                    {workflow.status === 'PUBLISHED' ? 'Published' : 'Draft'}
                   </Badge>
                 </Td>
                 {!readOnly && (
@@ -426,6 +463,7 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
+                          id={`workflow-actions-${workflow.id}`}
                           onClick={(e) => e.stopPropagation()}
                           className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
                         >
@@ -433,6 +471,12 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
+                        {workflow.status === 'DRAFT' && (
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handlePublishWorkflow(workflow.id); }}>
+                            <Pencil className="mr-2 h-3.5 w-3.5 opacity-0" />
+                            Publish
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => openEdit(workflow)}>
                           <Pencil className="mr-2 h-3.5 w-3.5" />
                           Edit
@@ -482,8 +526,8 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Status</h3>
-                <Badge tone={selectedWorkflow.isActive ? 'success' : 'neutral'}>
-                  {selectedWorkflow.isActive ? 'Active' : 'Inactive'}
+                <Badge tone={selectedWorkflow.status === 'PUBLISHED' ? 'success' : 'neutral'}>
+                  {selectedWorkflow.status === 'PUBLISHED' ? 'Published' : 'Draft'}
                 </Badge>
               </div>
               <div>
@@ -547,6 +591,7 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
                     <WorkflowDiagram
                       steps={selectedWorkflow.steps}
                       approverName={approverName}
+                      approverDesignation={approverDesignation}
                       currentStep={sow.currentStep}
                     />
                   );

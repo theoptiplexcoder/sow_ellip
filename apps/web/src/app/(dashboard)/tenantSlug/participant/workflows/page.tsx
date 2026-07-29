@@ -1,5 +1,10 @@
+import { Suspense } from 'react';
 import { WorkflowsPage } from '../../../../../components/admin/WorkflowsPage';
 
 export default function Page() {
-  return <WorkflowsPage readOnly={true} />;
+  return (
+    <Suspense fallback={null}>
+      <WorkflowsPage readOnly={true} />
+    </Suspense>
+  );
 }

@@ -14,7 +14,7 @@ import { WorkflowDiagram } from '../admin/workflows/WorkflowDiagram';
 import { StepApproversEditor } from '../admin/workflows/StepApproversEditor';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
-import { APPROVERS, STEP_ROLES, approverName, emptyStep, type MatchType, type Step, type StepRole } from '@sow/workflows';
+import { APPROVERS, STEP_ROLES, approverName, emptyStep, matchTypeForApproverCount, type MatchType, type Step, type StepRole } from '@sow/workflows';
 
 type WorkflowTemplateRow = {
   id: string;
@@ -119,7 +119,11 @@ export function WorkflowYardPage() {
 
   function openEdit(template: WorkflowTemplateRow) {
     setEditing(template);
-    setForm({ name: template.name, description: template.description ?? '', steps: template.steps.map((s) => ({ ...s })) });
+    setForm({
+      name: template.name,
+      description: template.description ?? '',
+      steps: template.steps.map((s) => ({ ...s, matchType: matchTypeForApproverCount(s.approverIds.length, s.matchType) })),
+    });
     setNameError(null);
     setOpen(true);
   }
@@ -255,13 +259,24 @@ export function WorkflowYardPage() {
                           <StepApproversEditor
                             approverIds={step.approverIds}
                             approvers={APPROVERS}
+                            matchType={step.matchType}
                             onChange={(patch) => updateStep(index, patch)}
                           />
-                          <Select value={step.matchType} onValueChange={(v) => updateStep(index, { matchType: v as MatchType })}>
+                          <Select
+                            value={step.matchType}
+                            onValueChange={(v) => updateStep(index, { matchType: v as MatchType })}
+                            disabled={step.approverIds.length <= 1}
+                          >
                             <SelectTrigger className="w-20 shrink-0" />
                             <SelectContent>
-                              <SelectItem value="AND">AND</SelectItem>
-                              <SelectItem value="OR">OR</SelectItem>
+                              {step.approverIds.length <= 1 ? (
+                                <SelectItem value="NA">NA</SelectItem>
+                              ) : (
+                                <>
+                                  <SelectItem value="AND">AND</SelectItem>
+                                  <SelectItem value="OR">OR</SelectItem>
+                                </>
+                              )}
                             </SelectContent>
                           </Select>
                           <Select value={step.role} onValueChange={(v) => updateStep(index, { role: v as StepRole })}>

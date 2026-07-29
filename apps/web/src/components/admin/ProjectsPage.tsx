@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Plus, Search, MoreHorizontal, Pencil, FolderKanban, FileText, X } from 'lucide-react';
 import { PageHeader } from '../ui/page-header';
 import { Button } from '../ui/button';
@@ -155,6 +156,17 @@ export function ProjectsPage() {
   const { width: sidebarWidth, startResize } = useResizableWidth(640, 280, 640);
   const [comments, setComments] = useState<Record<string, RequirementComment[]>>(COMMENTS_BY_PROJECT);
   const [newComment, setNewComment] = useState('');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('create') === '1') {
+      openCreate();
+      router.replace(pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const visible = projects.filter(
     (p) =>
@@ -370,6 +382,7 @@ export function ProjectsPage() {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
+                        id={`project-actions-${project.id}`}
                         onClick={(e) => e.stopPropagation()}
                         className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
                       >

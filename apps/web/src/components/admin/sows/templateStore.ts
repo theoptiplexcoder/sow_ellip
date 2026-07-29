@@ -56,6 +56,24 @@ const SEED_INPUT: SeedTemplate[] = [
     createdAt: '2026-01-10',
     fields: [
       {
+        key: 'projectTitle',
+        kind: 'shortText',
+        title: 'Project Title',
+        description: 'The title of the project.',
+        required: true,
+        readOnly: false,
+        hidden: false,
+      },
+      {
+        key: 'projectDescription',
+        kind: 'longText',
+        title: 'Project Description',
+        description: 'Detailed description of the project.',
+        required: true,
+        readOnly: false,
+        hidden: false,
+      },
+      {
         key: 'overview',
         kind: 'longText',
         title: 'Overview',
