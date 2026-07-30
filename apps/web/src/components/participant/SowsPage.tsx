@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { Plus, Search, FileText, MoreHorizontal, Printer } from 'lucide-react';
+import { Plus, Search, FileText, MoreHorizontal, Printer, History } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
 import { PageHeader } from '../ui/page-header';
 import { Button } from '../ui/button';
@@ -335,6 +335,10 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                 <p className="text-sm text-muted-foreground">{selectedSow.title}</p>
               </div>
               <div className="flex items-center gap-1 no-print">
+                <Button variant="ghost" size="sm">
+                  <History className="h-4 w-4" />
+                  Version History
+                </Button>
                 <Button variant="ghost" size="sm" onClick={() => window.print()}>
                   <Printer className="h-4 w-4" />
                   Export to PDF
