@@ -94,14 +94,18 @@ export function Navbar({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => router.push(roleLabel === 'SOW Participant' ? `${basePath}/sows/yard` : `${basePath}/sows/new`)}>
-                <FileText className="mr-2 h-4 w-4" />
-                <span>Create SOW</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push(roleLabel === 'SOW Participant' ? `${basePath}/workflows/yard` : `${basePath}/workflowyard`)}>
-                <GitPullRequest className="mr-2 h-4 w-4" />
-                <span>Publish SOW to Workflow</span>
-              </DropdownMenuItem>
+              {roleLabel !== 'Organization Admin' && (
+                <>
+                  <DropdownMenuItem onClick={() => router.push(roleLabel === 'SOW Participant' ? `${basePath}/sows/yard` : `${basePath}/sows/new`)}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>Create SOW</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push(roleLabel === 'SOW Participant' ? `${basePath}/workflows/yard` : `${basePath}/workflowyard`)}>
+                    <GitPullRequest className="mr-2 h-4 w-4" />
+                    <span>Publish SOW to Workflow</span>
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuItem onClick={() => router.push(`${basePath}/clients?create=1`)}>
                 <Users className="mr-2 h-4 w-4" />
                 <span>New client</span>
