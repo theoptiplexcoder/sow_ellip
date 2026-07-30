@@ -75,7 +75,7 @@ export function Hero() {
 
         {/* Social proof stats */}
         <FadeIn delay={0.25}>
-          <div className="mt-16 grid grid-cols-3 gap-6 border-t border-border pt-10 sm:max-w-lg lg:mt-20">
+          <div className="mt-16 grid grid-cols-3 gap-3 sm:gap-6 border-t border-border pt-10 sm:max-w-lg lg:mt-20">
             {STATS.map((stat) => (
               <div key={stat.label}>
                 <p className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">

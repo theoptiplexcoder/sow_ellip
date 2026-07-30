@@ -1,6 +1,11 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
-import { buildObjectSchema, draftsToDefaultValues, type FieldDraft } from './builder/fieldTypes';
+import {
+  buildObjectSchema,
+  draftsToDefaultValues,
+  type FieldDraft,
+} from './builder/fieldTypes';
 
 export type TemplateRow = {
   id: string;
@@ -8,6 +13,7 @@ export type TemplateRow = {
   description?: string;
   isActive: boolean;
   createdAt: string;
+  version: number;
   fields: FieldDraft[];
   jsonSchema: RJSFSchema;
   uiSchema: UiSchema;
@@ -31,10 +37,16 @@ export type TemplateInput = {
 
 function fromFields(fields: FieldDraft[]) {
   const { schema, uiSchema } = buildObjectSchema(fields);
-  return { jsonSchema: schema, uiSchema, defaultValues: draftsToDefaultValues(fields) };
+  return {
+    jsonSchema: schema,
+    uiSchema,
+    defaultValues: draftsToDefaultValues(fields),
+  };
 }
 
-function computeSchema(input: Pick<TemplateInput, 'fields' | 'schemaOverride'>) {
+function computeSchema(
+  input: Pick<TemplateInput, 'fields' | 'schemaOverride'>,
+) {
   if (input.schemaOverride) {
     return {
       jsonSchema: input.schemaOverride.jsonSchema,
@@ -45,7 +57,10 @@ function computeSchema(input: Pick<TemplateInput, 'fields' | 'schemaOverride'>) 
   return fromFields(input.fields);
 }
 
-type SeedTemplate = Pick<TemplateRow, 'id' | 'name' | 'description' | 'isActive' | 'createdAt' | 'fields'>;
+type SeedTemplate = Pick<
+  TemplateRow,
+  'id' | 'name' | 'description' | 'isActive' | 'createdAt' | 'fields'
+>;
 
 const SEED_INPUT: SeedTemplate[] = [
   {
@@ -57,39 +72,47 @@ const SEED_INPUT: SeedTemplate[] = [
     fields: [
       {
         key: 'projectTitle',
-        kind: 'shortText',
+        kind: 'text',
         title: 'Project Title',
         description: 'The title of the project.',
         required: true,
         readOnly: false,
         hidden: false,
+        disabled: false,
+        width: '100',
       },
       {
         key: 'projectDescription',
-        kind: 'longText',
+        kind: 'textarea',
         title: 'Project Description',
         description: 'Detailed description of the project.',
         required: true,
         readOnly: false,
         hidden: false,
+        disabled: false,
+        width: '100',
       },
       {
         key: 'overview',
-        kind: 'longText',
+        kind: 'textarea',
         title: 'Overview',
         description: 'Summarize the engagement.',
         required: true,
         readOnly: false,
         hidden: false,
+        disabled: false,
+        width: '100',
         default: 'This SOW outlines...',
       },
       {
         key: 'budget',
-        kind: 'number',
+        kind: 'currency',
         title: 'Budget (USD)',
         required: false,
         readOnly: false,
         hidden: false,
+        disabled: false,
+        width: '50',
       },
     ],
   },
@@ -111,7 +134,11 @@ const SEED_INPUT: SeedTemplate[] = [
   },
 ];
 
-const SEED_TEMPLATES: TemplateRow[] = SEED_INPUT.map((t) => ({ ...t, ...fromFields(t.fields) }));
+const SEED_TEMPLATES: TemplateRow[] = SEED_INPUT.map((t) => ({
+  ...t,
+  version: 1,
+  ...fromFields(t.fields),
+}));
 
 type TemplateStore = {
   templates: TemplateRow[];
@@ -119,69 +146,106 @@ type TemplateStore = {
   duplicateTemplate: (id: string) => void;
   deleteTemplate: (id: string) => void;
   toggleActive: (id: string) => void;
+  importTemplate: (data: {
+    name: string;
+    description?: string;
+    fields: FieldDraft[];
+  }) => TemplateRow;
 };
 
-export const useTemplateStore = create<TemplateStore>((set, get) => ({
-  templates: SEED_TEMPLATES,
+export const useTemplateStore = create<TemplateStore>()(
+  persist(
+    (set, get) => ({
+      templates: SEED_TEMPLATES,
 
-  upsertTemplate: (input) => {
-    const computed = computeSchema(input);
-    let saved: TemplateRow;
-    set((state) => {
-      if (input.id) {
-        const templates = state.templates.map((t) =>
-          t.id === input.id
-            ? { ...t, name: input.name, description: input.description, fields: input.fields, isActive: input.isActive, ...computed }
-            : t,
-        );
-        saved = templates.find((t) => t.id === input.id)!;
-        return { templates };
-      }
-      const row: TemplateRow = {
-        id: `t-${Date.now()}`,
-        name: input.name,
-        description: input.description,
-        isActive: input.isActive,
-        createdAt: new Date().toISOString().slice(0, 10),
-        fields: input.fields,
-        ...computed,
-      };
-      saved = row;
-      return { templates: [...state.templates, row] };
-    });
-    return saved!;
-  },
+      upsertTemplate: (input) => {
+        const computed = computeSchema(input);
+        let saved: TemplateRow;
+        set((state) => {
+          if (input.id) {
+            const templates = state.templates.map((t) =>
+              t.id === input.id
+                ? {
+                    ...t,
+                    name: input.name,
+                    description: input.description,
+                    fields: input.fields,
+                    isActive: input.isActive,
+                    version: t.version + 1,
+                    ...computed,
+                  }
+                : t,
+            );
+            saved = templates.find((t) => t.id === input.id)!;
+            return { templates };
+          }
+          const row: TemplateRow = {
+            id: `t-${Date.now()}`,
+            name: input.name,
+            description: input.description,
+            isActive: input.isActive,
+            createdAt: new Date().toISOString().slice(0, 10),
+            version: 1,
+            fields: input.fields,
+            ...computed,
+          };
+          saved = row;
+          return { templates: [...state.templates, row] };
+        });
+        return saved!;
+      },
 
-  duplicateTemplate: (id) => {
-    set((state) => {
-      const source = state.templates.find((t) => t.id === id);
-      if (!source) return state;
-      let name = `${source.name} (copy)`;
-      let i = 2;
-      while (state.templates.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
-        name = `${source.name} (copy ${i})`;
-        i += 1;
-      }
-      const clone: TemplateRow = {
-        ...source,
-        id: `t-${Date.now()}`,
-        name,
-        createdAt: new Date().toISOString().slice(0, 10),
-      };
-      return { templates: [...state.templates, clone] };
-    });
-  },
+      duplicateTemplate: (id) => {
+        set((state) => {
+          const source = state.templates.find((t) => t.id === id);
+          if (!source) return state;
+          let name = `${source.name} (copy)`;
+          let i = 2;
+          while (
+            state.templates.some(
+              (t) => t.name.toLowerCase() === name.toLowerCase(),
+            )
+          ) {
+            name = `${source.name} (copy ${i})`;
+            i += 1;
+          }
+          const clone: TemplateRow = {
+            ...source,
+            id: `t-${Date.now()}`,
+            name,
+            version: 1,
+            createdAt: new Date().toISOString().slice(0, 10),
+          };
+          return { templates: [...state.templates, clone] };
+        });
+      },
 
-  deleteTemplate: (id) => {
-    set((state) => ({ templates: state.templates.filter((t) => t.id !== id) }));
-  },
+      deleteTemplate: (id) => {
+        set((state) => ({
+          templates: state.templates.filter((t) => t.id !== id),
+        }));
+      },
 
-  toggleActive: (id) => {
-    set((state) => ({
-      templates: state.templates.map((t) => (t.id === id ? { ...t, isActive: !t.isActive } : t)),
-    }));
-  },
-}));
+      toggleActive: (id) => {
+        set((state) => ({
+          templates: state.templates.map((t) =>
+            t.id === id ? { ...t, isActive: !t.isActive } : t,
+          ),
+        }));
+      },
+
+      importTemplate: (data) => {
+        return get().upsertTemplate({
+          name: data.name,
+          description: data.description,
+          fields: data.fields,
+          isActive: true,
+        });
+      },
+    }),
+    { name: 'sow-template-store' },
+  ),
+);
 
 export function getTemplateById(id: string): TemplateRow | undefined {
   return useTemplateStore.getState().templates.find((t) => t.id === id);

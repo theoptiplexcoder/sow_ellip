@@ -33,7 +33,7 @@ export function StepApproversEditor({
         <button
           type="button"
           className={cn(
-            'flex w-48 shrink-0 items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40',
+            'flex w-full sm:w-48 shrink-0 items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40',
             className,
           )}
         >

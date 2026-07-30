@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Plus, X, Search, MoreHorizontal, Pencil, Copy, Trash2, ShieldCheck, User as UserIcon, Play, Check } from 'lucide-react';
 import { PageHeader } from '../ui/page-header';
 import { Button } from '../ui/button';
@@ -15,54 +16,15 @@ import { StepApproversEditor } from '../admin/workflows/StepApproversEditor';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
 import { APPROVERS, STEP_ROLES, approverName, emptyStep, matchTypeForApproverCount, type MatchType, type Step, type StepRole } from '@sow/workflows';
-
-type WorkflowTemplateRow = {
-  id: string;
-  name: string;
-  description?: string;
-  steps: Step[];
-  ownerId: string;
-  ownerName: string;
-};
+import { useWorkflowTemplateStore, type WorkflowTemplateRow } from '../admin/workflows/workflowTemplateStore';
 
 const CURRENT_USER_ID = 'u-2';
 const CURRENT_USER_NAME = 'Sam Okafor';
-const ADMIN_NAME = 'Priya Nair';
 
 const MY_SOWS = [
   { id: 's-1', sowNumber: 'SOW-1051', title: 'Q3 Platform Migration' },
   { id: 's-2', sowNumber: 'SOW-1055', title: 'Support Retainer Renewal' },
   { id: 's-3', sowNumber: 'SOW-1044', title: 'Data Warehouse Buildout' },
-];
-
-const INITIAL_TEMPLATES: WorkflowTemplateRow[] = [
-  {
-    id: 't-1',
-    name: 'Standard SOW Approval',
-    description: 'General 2-step approval for standard Statements of Work.',
-    steps: [
-      { label: 'Manager review', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' },
-      { label: 'Finance sign-off', approverIds: ['u-4'], matchType: 'AND', role: 'VIEWER' },
-    ],
-    ownerId: 'u-1',
-    ownerName: ADMIN_NAME,
-  },
-  {
-    id: 't-2',
-    name: 'Quick Approval',
-    description: 'Fast track single-step approval.',
-    steps: [{ label: 'Director approval', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' }],
-    ownerId: 'u-1',
-    ownerName: ADMIN_NAME,
-  },
-  {
-    id: 't-3',
-    name: 'Retainer fast-track',
-    description: 'My go-to for small recurring retainer renewals.',
-    steps: [{ label: 'Client sign-off', approverIds: ['u-4'], matchType: 'AND', role: 'APPROVER' }],
-    ownerId: CURRENT_USER_ID,
-    ownerName: CURRENT_USER_NAME,
-  },
 ];
 
 const emptyForm = {
@@ -90,7 +52,10 @@ function StepsPreview({ steps }: { steps: Step[] }) {
 }
 
 export function WorkflowYardPage() {
-  const [templates, setTemplates] = useState<WorkflowTemplateRow[]>(INITIAL_TEMPLATES);
+  const templates = useWorkflowTemplateStore((s) => s.templates);
+  const addTemplate = useWorkflowTemplateStore((s) => s.addTemplate);
+  const updateTemplate = useWorkflowTemplateStore((s) => s.updateTemplate);
+  const deleteTemplateFromStore = useWorkflowTemplateStore((s) => s.deleteTemplate);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<WorkflowTemplateRow | null>(null);
   const [deleting, setDeleting] = useState<WorkflowTemplateRow | null>(null);
@@ -102,6 +67,8 @@ export function WorkflowYardPage() {
   const [selectedSowId, setSelectedSowId] = useState(MY_SOWS[0].id);
   const [publishedMessage, setPublishedMessage] = useState<string | null>(null);
   const { width: sidebarWidth, startResize } = useResizableWidth(720, 360, 720);
+  const pathname = usePathname();
+  const isAdmin = pathname.includes('/admin/');
 
   const matchesSearch = (t: WorkflowTemplateRow) =>
     t.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -153,27 +120,15 @@ export function WorkflowYardPage() {
       return;
     }
     if (editing) {
-      setTemplates((prev) =>
-        prev.map((t) => (t.id === editing.id ? { ...t, name: trimmed, description: form.description, steps: form.steps } : t)),
-      );
+      updateTemplate(editing.id, { name: trimmed, description: form.description, steps: form.steps });
     } else {
-      setTemplates((prev) => [
-        ...prev,
-        {
-          id: `t-${prev.length + 1}`,
-          name: trimmed,
-          description: form.description,
-          steps: form.steps,
-          ownerId: CURRENT_USER_ID,
-          ownerName: CURRENT_USER_NAME,
-        },
-      ]);
+      addTemplate({ name: trimmed, description: form.description, steps: form.steps, ownerId: CURRENT_USER_ID, ownerName: CURRENT_USER_NAME });
     }
     setOpen(false);
   }
 
   function handleDelete(id: string) {
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    deleteTemplateFromStore(id);
     setDeleting(null);
     setSelectedTemplate((prev) => (prev?.id === id ? null : prev));
   }
@@ -196,13 +151,20 @@ export function WorkflowYardPage() {
 
 
   return (
-    <div className="flex items-start gap-6">
+    <div className="flex flex-col md:flex-row items-stretch md:items-start gap-4 md:gap-6">
       <div className="min-w-0 flex-1">
         <PageHeader
           title="Workflow Yard"
           description="Reusable workflow templates — from your organization, or your own."
           actions={
-            <Dialog open={open} onOpenChange={setOpen}>
+            isAdmin && (
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openCreate}>
+                    <Plus className="h-4 w-4" />
+                    New template
+                  </Button>
+                </DialogTrigger>
               <DialogContent title={editing ? 'Edit workflow template' : 'New workflow template'} className="max-w-2xl">
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   <div>
@@ -245,7 +207,7 @@ export function WorkflowYardPage() {
                     </div>
                     <div className="space-y-2">
                       {form.steps.map((step, index) => (
-                        <div key={index} className="flex items-center gap-2 rounded-md border border-border p-2">
+                        <div key={index} className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2">
                           <span className="w-5 shrink-0 text-center text-xs font-medium text-muted-foreground">
                             {index + 1}
                           </span>
@@ -313,7 +275,8 @@ export function WorkflowYardPage() {
                   </div>
                 </form>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            )
           }
         />
 
@@ -457,19 +420,100 @@ export function WorkflowYardPage() {
           )}
         </div>
 
+        <div className="mb-8">
+          <div className="mb-3 flex items-center gap-2">
+            <UserIcon className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">Your templates</h2>
+            <span className="text-xs text-muted-foreground">Workflows you've created for yourself.</span>
+          </div>
+          {myTemplates.length === 0 ? (
+            <EmptyState message={search ? 'No personal workflows match your search' : 'No personal workflows yet'} />
+          ) : (
+            <Table>
+              <TableHead>
+                <Th>Template</Th>
+                <Th>Steps</Th>
+                <Th className="text-right">Actions</Th>
+              </TableHead>
+              <TableBody>
+                {myTemplates.map((template) => (
+                  <tr
+                    key={template.id}
+                    className={`group cursor-pointer transition-colors hover:bg-muted/40 ${
+                      selectedTemplate?.id === template.id ? 'bg-muted/40' : ''
+                    }`}
+                    onClick={() => setSelectedTemplate(template)}
+                  >
+                    <Td>
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
+                          <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-foreground">{template.name}</div>
+                          {template.description && (
+                            <div className="text-xs text-muted-foreground">{template.description}</div>
+                          )}
+                        </div>
+                      </div>
+                    </Td>
+                    <Td>
+                      <StepsPreview steps={template.steps} />
+                    </Td>
+                    <Td>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openUse(template);
+                          }}
+                        >
+                          <Play className="h-3.5 w-3.5" />
+                          Use
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={(e) => e.stopPropagation()}
+                              className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(template); }}>
+                              <Pencil className="mr-2 h-3.5 w-3.5" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600 hover:text-red-700" onClick={(e) => { e.stopPropagation(); setDeleting(template); }}>
+                              <Trash2 className="mr-2 h-3.5 w-3.5" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </Td>
+                  </tr>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
 
       </div>
 
       <div
-        className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out -mt-6 -mb-6 -mr-6"
-        style={{ width: selectedTemplate ? sidebarWidth : 0, opacity: selectedTemplate ? 1 : 0 }}
+        className={`w-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out md:shrink-0 md:-mt-6 md:-mb-6 md:-mr-6 ${selectedTemplate ? 'md:w-[var(--panel-w)]' : 'md:w-0'}`}
+        style={{ ['--panel-w' as any]: `${sidebarWidth}px`, opacity: selectedTemplate ? 1 : 0 }}
       >
         {selectedTemplate && (
           <div
-            className="sticky top-14 flex h-[calc(100vh-3.5rem)] flex-col border-l border-border bg-muted/40"
-            style={{ width: sidebarWidth }}
+            className="fixed inset-0 z-40 overflow-y-auto bg-background p-4 md:sticky md:top-14 md:inset-auto md:z-auto md:flex md:h-[calc(100vh-3.5rem)] md:w-[var(--panel-w)] md:flex-col md:border-l md:border-border md:bg-muted/40 md:p-0"
           >
-            <ResizeHandle onPointerDown={startResize} />
+            <ResizeHandle onPointerDown={startResize} className="hidden md:block" />
             <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">{selectedTemplate.name}</h2>
@@ -487,7 +531,7 @@ export function WorkflowYardPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Steps</h3>
                   <p className="text-sm font-medium text-foreground">{selectedTemplate.steps.length}</p>
@@ -517,6 +561,10 @@ export function WorkflowYardPage() {
               <Button onClick={() => openUse(selectedTemplate)}>
                 <Play className="h-4 w-4" />
                 Use
+              </Button>
+              <Button onClick={() => openUse(selectedTemplate)}>
+                <Plus className="h-4 w-4" />
+                Add SOW
               </Button>
             </div>
           </div>

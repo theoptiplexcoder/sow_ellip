@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../ui/tabs';
-import { FieldEditor } from './FieldEditor';
+import { Canvas } from './Canvas';
+import { FieldPalette } from './FieldPalette';
 import { LivePreview } from './LivePreview';
-import { buildObjectSchema, draftsToDefaultValues, type FieldDraft } from './fieldTypes';
+import { PropertyPanel } from './PropertyPanel';
+import { TemplateToolbar } from './TemplateToolbar';
+import { buildObjectSchema, collectKeys, draftsToDefaultValues, newField, type FieldDraft, type FieldKind } from './fieldTypes';
+import { getNodeAtPath, insertNodeAtParentPath, updateNodeAtPath } from './treeOps';
 import type { SchemaOverride } from '../templateStore';
 
 export function TemplateBuilder({
@@ -12,12 +16,16 @@ export function TemplateBuilder({
   onFieldsChange,
   schemaOverride,
   onSchemaOverrideChange,
+  version,
 }: {
   fields: FieldDraft[];
   onFieldsChange: (fields: FieldDraft[]) => void;
   schemaOverride: SchemaOverride | null;
   onSchemaOverrideChange: (override: SchemaOverride | null) => void;
+  version: number;
 }) {
+  const [selectedPath, setSelectedPath] = useState<number[] | null>(null);
+
   const derived = buildObjectSchema(fields);
   const active: SchemaOverride = schemaOverride ?? {
     jsonSchema: derived.schema,
@@ -70,6 +78,24 @@ export function TemplateBuilder({
     });
   }
 
+  function addFieldFromPalette(kind: FieldKind) {
+    const node = newField(collectKeys(fields), kind);
+    if (selectedPath) {
+      const selected = getNodeAtPath(fields, selectedPath);
+      if (selected?.children) {
+        handleFieldsChange(insertNodeAtParentPath(fields, selectedPath, selected.children.length, node));
+        return;
+      }
+      const parentPath = selectedPath.slice(0, -1);
+      const index = selectedPath[selectedPath.length - 1];
+      handleFieldsChange(insertNodeAtParentPath(fields, parentPath, index + 1, node));
+      return;
+    }
+    handleFieldsChange([...fields, node]);
+  }
+
+  const selectedField = selectedPath ? getNodeAtPath(fields, selectedPath) : undefined;
+
   return (
     <Tabs defaultValue="fields">
       <TabsList>
@@ -79,19 +105,47 @@ export function TemplateBuilder({
       </TabsList>
 
       <TabsContent value="fields">
-        {fields.length === 0 && !schemaOverride ? (
-          <p className="mb-3 text-sm text-muted-foreground">
-            No fields yet. Add your first field to start building this template, or switch to the
-            &quot;JSON Schema&quot; tab to paste one directly.
-          </p>
-        ) : null}
+        <div className="mb-3">
+          <TemplateToolbar
+            fields={fields}
+            schemaOverride={schemaOverride}
+            version={version}
+            onImportFields={handleFieldsChange}
+            onImportSchema={onSchemaOverrideChange}
+          />
+        </div>
+
         {schemaOverride ? (
           <p className="mb-3 text-sm text-muted-foreground">
             This template is currently defined by a custom JSON Schema. Editing fields here will
             replace it with a schema generated from these fields.
           </p>
         ) : null}
-        <FieldEditor fields={fields} onChange={handleFieldsChange} />
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[15rem_1fr_18rem]">
+          <div className="rounded-md border border-border p-3">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Field palette</h3>
+            <FieldPalette onAdd={addFieldFromPalette} />
+          </div>
+
+          <div className="min-w-0 rounded-md border border-border p-3" onClick={() => setSelectedPath(null)}>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Canvas</h3>
+            <Canvas fields={fields} onFieldsChange={handleFieldsChange} selectedPath={selectedPath} onSelect={setSelectedPath} />
+          </div>
+
+          <div className="rounded-md border border-border p-3">
+            {selectedField && selectedPath ? (
+              <PropertyPanel
+                field={selectedField}
+                allFields={fields}
+                onChange={(patch) => handleFieldsChange(updateNodeAtPath(fields, selectedPath, patch))}
+                onClose={() => setSelectedPath(null)}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">Select a field on the canvas to edit its properties.</p>
+            )}
+          </div>
+        </div>
       </TabsContent>
 
       <TabsContent value="schema">
@@ -110,11 +164,7 @@ export function TemplateBuilder({
       </TabsContent>
 
       <TabsContent value="preview">
-        <LivePreview
-          schema={active.jsonSchema}
-          uiSchema={active.uiSchema}
-          defaultValues={active.defaultValues}
-        />
+        <LivePreview schema={active.jsonSchema} uiSchema={active.uiSchema} defaultValues={active.defaultValues} />
       </TabsContent>
     </Tabs>
   );

@@ -257,23 +257,25 @@ export function WorkflowDiagram({
           </span>
         </div>
       </div>
-      <div className="h-105 w-full rounded-lg border border-border bg-card">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={{ padding: 0.3 }}
-          nodesDraggable={true}
-          nodesConnectable={false}
-          elementsSelectable={true}
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background gap={16} />
-          <Controls showInteractive={false} />
-        </ReactFlow>
+      <div className="h-105 w-full overflow-x-auto rounded-lg border border-border bg-card">
+        <div className="h-full min-w-[320px]">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            nodeTypes={nodeTypes}
+            fitView
+            fitViewOptions={{ padding: 0.3 }}
+            nodesDraggable={true}
+            nodesConnectable={false}
+            elementsSelectable={true}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background gap={16} />
+            <Controls showInteractive={false} />
+          </ReactFlow>
+        </div>
       </div>
     </div>
   );

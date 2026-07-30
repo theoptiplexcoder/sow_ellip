@@ -17,77 +17,7 @@ import { StepApproversEditor } from './workflows/StepApproversEditor';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
 import { APPROVERS, STEP_ROLES, approverName, approverDesignation, emptyStep, matchTypeForApproverCount, type MatchType, type Step, type StepRole } from '@sow/workflows';
-
-type SowLink = {
-  id: string;
-  sowNumber: string;
-  title: string;
-  /** Mock progress: index of the step currently in review (steps.length = fully approved). Independent per SOW. */
-  currentStep: number;
-};
-
-type Status = 'PUBLISHED' | 'DRAFT';
-
-type WorkflowRow = {
-  id: string;
-  name: string;
-  description?: string;
-  status: Status;
-  steps: Step[];
-  /** A workflow can be reused across multiple SOWs, each progressing through it independently. */
-  sows: SowLink[];
-};
-
-const INITIAL_WORKFLOWS: WorkflowRow[] = [
-  {
-    id: 'w-1',
-    name: 'Standard 2-step',
-    description: 'Manager review, then finance sign-off.',
-    status: 'PUBLISHED',
-    steps: [
-      { label: 'Manager review', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' },
-      { label: 'Finance sign-off', approverIds: ['u-4'], matchType: 'AND', role: 'VIEWER' },
-    ],
-    sows: [
-      { id: 's-1', sowNumber: 'SOW-1042', title: 'Website revamp — Phase 1', currentStep: 2 },
-      { id: 's-4', sowNumber: 'SOW-1048', title: 'Phase 2 scope addendum', currentStep: 0 },
-    ],
-  },
-  {
-    id: 'w-2',
-    name: 'Single approver',
-    status: 'DRAFT',
-    steps: [{ label: 'Director approval', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' }],
-    sows: [{ id: 's-3', sowNumber: 'SOW-1055', title: 'Support retainer renewal', currentStep: 0 }],
-  },
-  {
-    id: 'w-3',
-    name: 'Joint sign-off (AND)',
-    description: 'Both Dana and Jordan must approve before it moves forward.',
-    status: 'PUBLISHED',
-    steps: [{ label: 'Joint review', approverIds: ['u-3', 'u-4'], matchType: 'AND', role: 'APPROVER' }],
-    sows: [{ id: 's-5', sowNumber: 'SOW-1060', title: 'Joint sign-off demo', currentStep: 1 }],
-  },
-  {
-    id: 'w-4',
-    name: 'Either approver (OR)',
-    description: 'Either Dana or Jordan can approve — whichever is available first.',
-    status: 'PUBLISHED',
-    steps: [{ label: 'Backup review', approverIds: ['u-3', 'u-4'], matchType: 'OR', role: 'APPROVER', approvedBy: ['u-4'] }],
-    sows: [{ id: 's-6', sowNumber: 'SOW-1061', title: 'Either approver demo', currentStep: 1 }],
-  },
-  {
-    id: 'w-5',
-    name: 'Mixed conditions (AND + OR)',
-    description: 'Joint review requires both, final sign-off accepts either.',
-    status: 'PUBLISHED',
-    steps: [
-      { label: 'Joint review', approverIds: ['u-3', 'u-4'], matchType: 'AND', role: 'APPROVER' },
-      { label: 'Final sign-off', approverIds: ['u-3', 'u-4'], matchType: 'OR', role: 'APPROVER', approvedBy: ['u-3'] },
-    ],
-    sows: [{ id: 's-7', sowNumber: 'SOW-1062', title: 'Mixed conditions demo', currentStep: 2 }],
-  },
-];
+import { useWorkflowStore, type WorkflowRow, type WorkflowStatus as Status } from './workflows/workflowStore';
 
 const emptyForm = {
   name: '',
@@ -100,7 +30,11 @@ interface WorkflowsPageProps {
 }
 
 export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
-  const [workflows, setWorkflows] = useState<WorkflowRow[]>(INITIAL_WORKFLOWS);
+  const workflows = useWorkflowStore((s) => s.workflows);
+  const addWorkflow = useWorkflowStore((s) => s.addWorkflow);
+  const updateWorkflow = useWorkflowStore((s) => s.updateWorkflow);
+  const deleteWorkflowFromStore = useWorkflowStore((s) => s.deleteWorkflow);
+  const publishWorkflowInStore = useWorkflowStore((s) => s.publishWorkflow);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<WorkflowRow | null>(null);
   const [deleting, setDeleting] = useState<WorkflowRow | null>(null);
@@ -190,31 +124,26 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
       return;
     }
     if (editing) {
-      setWorkflows((prev) =>
-        prev.map((w) => (w.id === editing.id ? { ...w, name: trimmed, description: form.description, steps: form.steps } : w)),
-      );
+      updateWorkflow(editing.id, { name: trimmed, description: form.description, steps: form.steps });
     } else {
-      setWorkflows((prev) => [
-        ...prev,
-        { id: `w-${prev.length + 1}`, name: trimmed, description: form.description, status: 'DRAFT', steps: form.steps, currentStep: 0, sows: [] },
-      ]);
+      addWorkflow({ name: trimmed, description: form.description, steps: form.steps });
     }
     setOpen(false);
   }
 
   function handleDelete(id: string) {
-    setWorkflows((prev) => prev.filter((w) => w.id !== id));
+    deleteWorkflowFromStore(id);
     setDeleting(null);
   }
 
   function handlePublishWorkflow(id: string) {
-    setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, status: 'PUBLISHED' } : w)));
+    publishWorkflowInStore(id);
   }
 
   const publishedCount = workflows.filter((w) => w.status === 'PUBLISHED').length;
 
   return (
-    <div className="flex items-start gap-6">
+    <div className="flex flex-col md:flex-row items-stretch md:items-start gap-4 md:gap-6">
     <div className="min-w-0 flex-1">
       <PageHeader
         title="Workflows"
@@ -260,7 +189,7 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
                         Add step
                       </Button>
                     </div>
-                    <div className="mb-1 flex items-center gap-2 px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <div className="mb-1 flex flex-wrap items-center gap-2 px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                       <span className="w-5 shrink-0" />
                       <span className="flex-1">Label</span>
                       <span className="w-48 shrink-0">Approvers</span>
@@ -270,7 +199,7 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
                     </div>
                     <div className="space-y-2">
                       {form.steps.map((step, index) => (
-                        <div key={index} className="flex items-center gap-2 rounded-md border border-border p-2">
+                        <div key={index} className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2">
                           <span className="w-5 shrink-0 text-center text-xs font-medium text-muted-foreground">
                             {index + 1}
                           </span>
@@ -497,15 +426,15 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
     </div>
 
     <div
-      className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out -mt-6 -mb-6 -mr-6"
-      style={{ width: selectedWorkflow ? sidebarWidth : 0, opacity: selectedWorkflow ? 1 : 0 }}
+      className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out w-0! md:w-(--panel-w)! md:-mt-6 md:-mb-6 md:-mr-6"
+      style={{ ['--panel-w' as any]: `${selectedWorkflow ? sidebarWidth : 0}px`, opacity: selectedWorkflow ? 1 : 0 }}
     >
       {selectedWorkflow && (
         <div
-          className="sticky top-14 flex h-[calc(100vh-3.5rem)] flex-col border-l border-border bg-muted/40"
-          style={{ width: sidebarWidth }}
+          className="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-background md:sticky md:top-14 md:inset-auto md:z-auto md:h-[calc(100vh-3.5rem)] md:w-(--panel-w) md:overflow-visible md:border-l md:border-border md:bg-muted/40"
+          style={{ ['--panel-w' as any]: `${sidebarWidth}px` }}
         >
-          <ResizeHandle onPointerDown={startResize} />
+          <ResizeHandle onPointerDown={startResize} className="hidden md:block" />
           <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
             <div>
               <h2 className="text-lg font-semibold text-foreground">{selectedWorkflow.name}</h2>
@@ -523,7 +452,7 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
                 <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Status</h3>
                 <Badge tone={selectedWorkflow.status === 'PUBLISHED' ? 'success' : 'neutral'}>

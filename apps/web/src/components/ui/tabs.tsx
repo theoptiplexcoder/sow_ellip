@@ -8,7 +8,7 @@ export const Tabs = RadixTabs.Root;
 export function TabsList({ className, ...props }: React.ComponentProps<typeof RadixTabs.List>) {
   return (
     <RadixTabs.List
-      className={cn('inline-flex items-center gap-1 rounded-md bg-muted p-1', className)}
+      className={cn('inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-md bg-muted p-1', className)}
       {...props}
     />
   );

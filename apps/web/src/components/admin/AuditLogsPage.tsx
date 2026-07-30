@@ -142,14 +142,14 @@ export function AuditLogsPage() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div>
             <Label className="mb-1 text-xs" htmlFor="from-date">From</Label>
-            <Input id="from-date" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-36" />
+            <Input id="from-date" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-28 sm:w-36" />
           </div>
           <div>
             <Label className="mb-1 text-xs" htmlFor="to-date">To</Label>
-            <Input id="to-date" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-36" />
+            <Input id="to-date" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-28 sm:w-36" />
           </div>
         </div>
       </div>

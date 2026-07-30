@@ -148,7 +148,7 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
   );
 
   return (
-    <div className="flex items-start gap-6">
+    <div className="flex flex-col md:flex-row items-stretch md:items-start gap-4 md:gap-6">
       <div className="min-w-0 flex-1">
         <PageHeader
           title="SOWs"
@@ -263,15 +263,15 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
 
       {/* Right sidebar: template doc — pushes content left, no overlay */}
       <div
-        className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out -mt-6 -mb-6 -mr-6"
-        style={{ width: selectedSow ? sidebarWidth : 0, opacity: selectedSow ? 1 : 0 }}
+        className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out w-0 md:w-[var(--panel-w)] md:-mt-6 md:-mb-6 md:-mr-6"
+        style={{ ['--panel-w' as any]: selectedSow ? `${sidebarWidth}px` : '0px', opacity: selectedSow ? 1 : 0 }}
       >
         {selectedSow && (
           <div
-            className="sticky top-14 flex h-[calc(100vh-3.5rem)] flex-col border-l border-border bg-muted/40"
-            style={{ width: sidebarWidth }}
+            className="fixed inset-0 z-40 flex flex-col bg-background md:sticky md:top-14 md:inset-auto md:z-auto md:h-[calc(100vh-3.5rem)] md:w-[var(--panel-w)] md:border-l md:border-border md:bg-muted/40"
+            style={{ ['--panel-w' as any]: `${sidebarWidth}px` }}
           >
-            <ResizeHandle onPointerDown={startResize} />
+            <ResizeHandle onPointerDown={startResize} className="hidden md:block" />
             <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">{selectedSow.sowNumber}</h2>
@@ -287,7 +287,7 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Version</h3>
                   <p className="text-sm font-medium text-foreground">v{selectedSow.version}</p>

@@ -220,7 +220,7 @@ export function ProjectsPage() {
   }
 
   return (
-    <div className="flex items-start gap-6">
+    <div className="flex flex-col md:flex-row items-stretch md:items-start gap-4 md:gap-6">
     <div className="min-w-0 flex-1">
       <PageHeader
         title="Projects"
@@ -244,7 +244,7 @@ export function ProjectsPage() {
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <Label>Client</Label>
                     <Select value={form.clientId} onValueChange={(v) => setForm({ ...form, clientId: v })}>
@@ -279,7 +279,7 @@ export function ProjectsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="project-start">Expected start</Label>
                     <Input
@@ -406,10 +406,10 @@ export function ProjectsPage() {
 
     {selectedProject && (
       <aside
-        className="sticky top-14 h-[calc(100vh-3.5rem)] shrink-0 overflow-y-auto border-l border-border bg-muted/40 p-4 -mt-6 -mb-6 -mr-6"
-        style={{ width: sidebarWidth }}
+        className="fixed inset-0 z-40 overflow-y-auto bg-background p-4 md:sticky md:top-14 md:inset-auto md:z-auto md:h-[calc(100vh-3.5rem)] md:w-[var(--panel-w)] md:shrink-0 md:border-l md:border-border md:bg-muted/40 md:-mt-6 md:-mb-6 md:-mr-6"
+        style={{ ['--panel-w' as any]: `${sidebarWidth}px` }}
       >
-        <ResizeHandle onPointerDown={startResize} />
+        <ResizeHandle onPointerDown={startResize} className="hidden md:block" />
         <div className="mb-4 flex items-start justify-between">
           <div>
             <div className="text-base font-semibold text-foreground">{selectedProject.name}</div>

@@ -43,7 +43,7 @@ export function Footer() {
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
               The no-fuss system of record for every statement of work.
             </p>
-            <div className="mt-6 flex items-center gap-3">
+            <div className="mt-6 flex flex-wrap items-center gap-3">
               <Link
                 href="/auth/signup"
                 className="press-scale rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover"

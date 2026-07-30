@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { PageHeader } from '../../ui/page-header';
 import { Button } from '../../ui/button';
-import { Card, CardContent } from '../../ui/card';
-import { Input, Textarea } from '../../ui/input';
+
+import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { TemplateBuilder } from './builder/TemplateBuilder';
 import type { FieldDraft } from './builder/fieldTypes';
@@ -74,42 +74,38 @@ export function TemplateEditorPage({ templateId }: { templateId?: string }) {
         }
       />
 
-      <div className="mx-auto max-w-3xl">
-        <Card>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="template-name">Name</Label>
-              <Input
-                id="template-name"
-                required
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setNameError(null);
-                }}
-              />
-              {nameError && <p className="mt-1 text-xs text-red-600">{nameError}</p>}
-            </div>
-            <div>
-              <Label htmlFor="template-description">Description</Label>
-              <Textarea
-                id="template-description"
-                rows={2}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="mt-6">
-          <TemplateBuilder
-            fields={fields}
-            onFieldsChange={setFields}
-            schemaOverride={schemaOverride}
-            onSchemaOverrideChange={setSchemaOverride}
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <Label htmlFor="template-name">Name</Label>
+          <Input
+            id="template-name"
+            required
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setNameError(null);
+            }}
+          />
+          {nameError && <p className="mt-1 text-xs text-red-600">{nameError}</p>}
+        </div>
+        <div>
+          <Label htmlFor="template-description">Description</Label>
+          <Input
+            id="template-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
           />
         </div>
+      </div>
+
+      <div className="mt-6">
+        <TemplateBuilder
+          fields={fields}
+          onFieldsChange={setFields}
+          schemaOverride={schemaOverride}
+          onSchemaOverrideChange={setSchemaOverride}
+          version={editing?.version ?? 1}
+        />
       </div>
     </div>
   );

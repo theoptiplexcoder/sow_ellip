@@ -15,52 +15,7 @@ import { StepApproversEditor } from './workflows/StepApproversEditor';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
 import { APPROVERS, STEP_ROLES, approverName, approverDesignation, emptyStep, matchTypeForApproverCount, type MatchType, type Step, type StepRole } from '@sow/workflows';
-
-type WorkflowTemplateRow = {
-  id: string;
-  name: string;
-  description?: string;
-  steps: Step[];
-};
-
-const INITIAL_TEMPLATES: WorkflowTemplateRow[] = [
-  {
-    id: 't-1',
-    name: 'Standard SOW Approval',
-    description: 'General 2-step approval for standard Statements of Work.',
-    steps: [
-      { label: 'Manager review', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' },
-      { label: 'Finance sign-off', approverIds: ['u-4'], matchType: 'AND', role: 'VIEWER' },
-    ],
-  },
-  {
-    id: 't-2',
-    name: 'Quick Approval',
-    description: 'Fast track single-step approval.',
-    steps: [{ label: 'Director approval', approverIds: ['u-3'], matchType: 'AND', role: 'APPROVER' }],
-  },
-  {
-    id: 't-3',
-    name: 'Joint sign-off (AND)',
-    description: 'Both Dana and Jordan must approve before it moves forward.',
-    steps: [{ label: 'Joint review', approverIds: ['u-3', 'u-4'], matchType: 'AND', role: 'APPROVER' }],
-  },
-  {
-    id: 't-4',
-    name: 'Either approver (OR)',
-    description: 'Either Dana or Jordan can approve — whichever is available first.',
-    steps: [{ label: 'Backup review', approverIds: ['u-3', 'u-4'], matchType: 'OR', role: 'APPROVER' }],
-  },
-  {
-    id: 't-5',
-    name: 'Mixed conditions (AND + OR)',
-    description: 'Joint review requires both, final sign-off accepts either.',
-    steps: [
-      { label: 'Joint review', approverIds: ['u-3', 'u-4'], matchType: 'AND', role: 'APPROVER' },
-      { label: 'Final sign-off', approverIds: ['u-3', 'u-4'], matchType: 'OR', role: 'APPROVER' },
-    ],
-  },
-];
+import { useWorkflowTemplateStore, ORG_OWNER_ID, ORG_OWNER_NAME, type WorkflowTemplateRow } from './workflows/workflowTemplateStore';
 
 const emptyForm = {
   name: '',
@@ -69,7 +24,10 @@ const emptyForm = {
 };
 
 export function WorkflowYardPage() {
-  const [templates, setTemplates] = useState<WorkflowTemplateRow[]>(INITIAL_TEMPLATES);
+  const templates = useWorkflowTemplateStore((s) => s.templates);
+  const addTemplate = useWorkflowTemplateStore((s) => s.addTemplate);
+  const updateTemplate = useWorkflowTemplateStore((s) => s.updateTemplate);
+  const deleteTemplateFromStore = useWorkflowTemplateStore((s) => s.deleteTemplate);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<WorkflowTemplateRow | null>(null);
   const [deleting, setDeleting] = useState<WorkflowTemplateRow | null>(null);
@@ -128,25 +86,20 @@ export function WorkflowYardPage() {
       return;
     }
     if (editing) {
-      setTemplates((prev) =>
-        prev.map((t) => (t.id === editing.id ? { ...t, name: trimmed, description: form.description, steps: form.steps } : t)),
-      );
+      updateTemplate(editing.id, { name: trimmed, description: form.description, steps: form.steps });
     } else {
-      setTemplates((prev) => [
-        ...prev,
-        { id: `t-${prev.length + 1}`, name: trimmed, description: form.description, steps: form.steps },
-      ]);
+      addTemplate({ name: trimmed, description: form.description, steps: form.steps, ownerId: ORG_OWNER_ID, ownerName: ORG_OWNER_NAME });
     }
     setOpen(false);
   }
 
   function handleDelete(id: string) {
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    deleteTemplateFromStore(id);
     setDeleting(null);
   }
 
   return (
-    <div className="flex items-start gap-6">
+    <div className="flex flex-col md:flex-row items-stretch md:items-start gap-4 md:gap-6">
       <div className="min-w-0 flex-1">
         <PageHeader
           title="Workflow Yard"
@@ -191,7 +144,7 @@ export function WorkflowYardPage() {
                         Add step
                       </Button>
                     </div>
-                    <div className="mb-1 flex items-center gap-2 px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <div className="mb-1 flex flex-wrap items-center gap-2 px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                       <span className="w-5 shrink-0" />
                       <span className="flex-1">Label</span>
                       <span className="w-48 shrink-0">Approvers</span>
@@ -201,7 +154,7 @@ export function WorkflowYardPage() {
                     </div>
                     <div className="space-y-2">
                       {form.steps.map((step, index) => (
-                        <div key={index} className="flex items-center gap-2 rounded-md border border-border p-2">
+                        <div key={index} className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2">
                           <span className="w-5 shrink-0 text-center text-xs font-medium text-muted-foreground">
                             {index + 1}
                           </span>
@@ -384,15 +337,15 @@ export function WorkflowYardPage() {
       </div>
 
       <div
-        className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out -mt-6 -mb-6 -mr-6"
-        style={{ width: selectedTemplate ? sidebarWidth : 0, opacity: selectedTemplate ? 1 : 0 }}
+        className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out w-0! md:w-(--panel-w)! md:-mt-6 md:-mb-6 md:-mr-6"
+        style={{ ['--panel-w' as any]: `${selectedTemplate ? sidebarWidth : 0}px`, opacity: selectedTemplate ? 1 : 0 }}
       >
         {selectedTemplate && (
           <div
-            className="sticky top-14 flex h-[calc(100vh-3.5rem)] flex-col border-l border-border bg-muted/40"
-            style={{ width: sidebarWidth }}
+            className="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-background md:sticky md:top-14 md:inset-auto md:z-auto md:h-[calc(100vh-3.5rem)] md:w-(--panel-w) md:overflow-visible md:border-l md:border-border md:bg-muted/40"
+            style={{ ['--panel-w' as any]: `${sidebarWidth}px` }}
           >
-            <ResizeHandle onPointerDown={startResize} />
+            <ResizeHandle onPointerDown={startResize} className="hidden md:block" />
             <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">{selectedTemplate.name}</h2>
@@ -410,7 +363,7 @@ export function WorkflowYardPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Steps</h3>
                   <p className="text-sm font-medium text-foreground">{selectedTemplate.steps.length}</p>

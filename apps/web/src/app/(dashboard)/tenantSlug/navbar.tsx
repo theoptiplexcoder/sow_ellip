@@ -45,8 +45,8 @@ export function Navbar({
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur sm:px-6">
-      <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-background/95 px-3 backdrop-blur sm:gap-3 sm:px-6">
+      <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-2">
         <button
           type="button"
           onClick={onToggleMobile}
@@ -72,8 +72,8 @@ export function Navbar({
       </div>
 
       {/* Center Group: Search Bar directly beside Create Button */}
-      <div className="flex flex-1 items-center justify-center gap-2 max-w-lg mx-auto">
-        <div className="relative flex-1">
+      <div className="mx-auto flex max-w-lg flex-1 items-center justify-end gap-2 sm:justify-center">
+        <div className="relative hidden flex-1 sm:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
@@ -81,6 +81,13 @@ export function Navbar({
             className="w-full rounded-md border border-border bg-muted/50 py-1.5 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
           />
         </div>
+        <button
+          type="button"
+          className="press-scale rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground sm:hidden"
+          aria-label="Search"
+        >
+          <Search className="h-4 w-4" />
+        </button>
         {roleLabel !== 'Client' && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -132,7 +139,7 @@ export function Navbar({
       </div>
 
       {/* Right Controls: Dark/Light Mode, Settings, Profile */}
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         <button
           type="button"
           onClick={toggleTheme}
@@ -144,7 +151,7 @@ export function Navbar({
 
         <button
           type="button"
-          className="press-scale rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="press-scale hidden rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground sm:inline-flex"
           aria-label="Settings"
         >
           <Settings className="h-4 w-4" />

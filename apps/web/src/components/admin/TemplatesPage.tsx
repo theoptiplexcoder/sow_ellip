@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Plus, Search, MoreHorizontal, Pencil, Copy, FileText, Trash2, X } from 'lucide-react';
 import { PageHeader } from '../ui/page-header';
@@ -22,6 +22,8 @@ export function TemplatesPage() {
   const duplicateTemplate = useTemplateStore((s) => s.duplicateTemplate);
   const deleteTemplate = useTemplateStore((s) => s.deleteTemplate);
   const toggleActive = useTemplateStore((s) => s.toggleActive);
+  const pathname = usePathname();
+  const isAdmin = pathname.includes('/admin/');
 
   const [deleting, setDeleting] = useState<TemplateRow | null>(null);
   const [search, setSearch] = useState('');
@@ -42,16 +44,18 @@ export function TemplatesPage() {
   const activeCount = templates.filter((t) => t.isActive).length;
 
   return (
-    <div className="flex items-start gap-6">
+    <div className="flex flex-col md:flex-row items-stretch md:items-start gap-4 md:gap-6">
     <div className="min-w-0 flex-1">
       <PageHeader
         title="Templates"
         description="Reusable, JSON-Schema-driven forms for starting a new SOW."
         actions={
-          <Button onClick={() => router.push('/tenantSlug/admin/sows/new')}>
-            <Plus className="h-4 w-4" />
-            New template
-          </Button>
+          isAdmin && (
+            <Button onClick={() => router.push('/tenantSlug/admin/sows/new')}>
+              <Plus className="h-4 w-4" />
+              New template
+            </Button>
+          )
         }
       />
 
@@ -96,7 +100,7 @@ export function TemplatesPage() {
             <Th>Status</Th>
             <Th>Created</Th>
             <Th className="text-right">Active</Th>
-            <Th className="w-10">&nbsp;</Th>
+            {isAdmin && <Th className="w-10">&nbsp;</Th>}
           </TableHead>
           <TableBody>
             {visible.map((template) => (
@@ -129,37 +133,39 @@ export function TemplatesPage() {
                 <Td className="text-muted-foreground">{template.createdAt}</Td>
                 <Td className="text-right">
                   <span onClick={(e) => e.stopPropagation()}>
-                    <Switch checked={template.isActive} onCheckedChange={() => toggleActive(template.id)} />
+                    <Switch disabled={!isAdmin} checked={template.isActive} onCheckedChange={() => toggleActive(template.id)} />
                   </span>
                 </Td>
-                <Td>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        id={`template-actions-${template.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => router.push(`/tenantSlug/admin/sows/${template.id}/edit`)}>
-                        <Pencil className="mr-2 h-3.5 w-3.5" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => duplicateTemplate(template.id)}>
-                        <Copy className="mr-2 h-3.5 w-3.5" />
-                        Duplicate
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600 hover:text-red-700" onClick={() => setDeleting(template)}>
-                        <Trash2 className="mr-2 h-3.5 w-3.5" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </Td>
+                {isAdmin && (
+                  <Td>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          id={`template-actions-${template.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded-md p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => router.push(`/tenantSlug/admin/sows/${template.id}/edit`)}>
+                          <Pencil className="mr-2 h-3.5 w-3.5" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => duplicateTemplate(template.id)}>
+                          <Copy className="mr-2 h-3.5 w-3.5" />
+                          Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600 hover:text-red-700" onClick={() => setDeleting(template)}>
+                          <Trash2 className="mr-2 h-3.5 w-3.5" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </Td>
+                )}
               </tr>
             ))}
           </TableBody>
@@ -168,15 +174,15 @@ export function TemplatesPage() {
     </div>
 
     <div
-      className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out -mt-6 -mb-6 -mr-6"
-      style={{ width: selectedTemplate ? sidebarWidth : 0, opacity: selectedTemplate ? 1 : 0 }}
+      className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out w-0 md:w-[var(--panel-w)] md:-mt-6 md:-mb-6 md:-mr-6"
+      style={{ ['--panel-w' as any]: selectedTemplate ? `${sidebarWidth}px` : '0px', opacity: selectedTemplate ? 1 : 0 }}
     >
       {selectedTemplate && (
         <div
-          className="sticky top-14 flex h-[calc(100vh-3.5rem)] flex-col border-l border-border bg-muted/40"
-          style={{ width: sidebarWidth }}
+          className="fixed inset-0 z-40 flex flex-col bg-background md:sticky md:top-14 md:inset-auto md:z-auto md:h-[calc(100vh-3.5rem)] md:w-[var(--panel-w)] md:border-l md:border-border md:bg-muted/40"
+          style={{ ['--panel-w' as any]: `${sidebarWidth}px` }}
         >
-          <ResizeHandle onPointerDown={startResize} />
+          <ResizeHandle onPointerDown={startResize} className="hidden md:block" />
           <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
             <div>
               <h2 className="text-lg font-semibold text-foreground">{selectedTemplate.name}</h2>
@@ -194,7 +200,7 @@ export function TemplatesPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Status</h3>
                 <Badge tone={selectedTemplate.isActive ? 'success' : 'neutral'}>
@@ -229,9 +235,11 @@ export function TemplatesPage() {
             <Button variant="outline" onClick={() => setSelectedTemplate(null)}>
               Close
             </Button>
-            <Button onClick={() => router.push(`/tenantSlug/admin/sows/${selectedTemplate.id}/edit`)}>
-              Edit Template
-            </Button>
+            {isAdmin && (
+              <Button onClick={() => router.push(`/tenantSlug/admin/sows/${selectedTemplate.id}/edit`)}>
+                Edit Template
+              </Button>
+            )}
           </div>
         </div>
       )}

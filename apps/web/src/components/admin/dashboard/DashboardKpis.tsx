@@ -144,11 +144,13 @@ export function DashboardKpis() {
             <div className="divide-y divide-border rounded-lg border border-border">
               {stuckSows.map((s) => (
                 <div key={s.id} className="flex items-center justify-between px-4 py-2.5">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{s.sowNumber}</p>
-                    <p className="text-xs text-muted-foreground">{s.title}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{s.sowNumber}</p>
+                    <p className="truncate text-xs text-muted-foreground">{s.title}</p>
                   </div>
-                  <Badge tone="warning">{s.daysInStatus}d</Badge>
+                  <div className="shrink-0">
+                    <Badge tone="warning">{s.daysInStatus}d</Badge>
+                  </div>
                 </div>
               ))}
             </div>
@@ -224,15 +226,17 @@ export function DashboardKpis() {
             <div className="divide-y divide-border rounded-lg border border-border">
               {INACTIVE_USERS.map((u) => (
                 <div key={u.email} className="flex items-center justify-between px-4 py-2.5">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{u.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{u.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
                       {u.email} · {u.role}
                     </p>
                   </div>
-                  <Badge tone={u.lastActiveDaysAgo >= 90 ? 'danger' : u.lastActiveDaysAgo >= 60 ? 'warning' : 'neutral'}>
-                    {u.lastActiveDaysAgo}d idle
-                  </Badge>
+                  <div className="shrink-0">
+                    <Badge tone={u.lastActiveDaysAgo >= 90 ? 'danger' : u.lastActiveDaysAgo >= 60 ? 'warning' : 'neutral'}>
+                      {u.lastActiveDaysAgo}d idle
+                    </Badge>
+                  </div>
                 </div>
               ))}
             </div>
@@ -261,8 +265,10 @@ export function DashboardKpis() {
               <div className="divide-y divide-border rounded-lg border border-border">
                 {IDLE_WORKFLOWS.map((w) => (
                   <div key={w.workflow} className="flex items-center justify-between px-4 py-2.5">
-                    <p className="text-sm font-medium text-foreground">{w.workflow}</p>
-                    <Badge tone="neutral">0 active</Badge>
+                    <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{w.workflow}</p>
+                    <div className="shrink-0">
+                      <Badge tone="neutral">0 active</Badge>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -309,7 +315,7 @@ export function DashboardKpis() {
         <div className="divide-y divide-border">
           {RECENT_AUDIT_ENTRIES.map((entry, i) => (
             <div key={i} className="flex items-center justify-between py-2.5">
-              <p className="text-sm text-foreground">
+              <p className="min-w-0 flex-1 truncate text-sm text-foreground">
                 <span className="font-medium">{entry.actor}</span>{' '}
                 <span className="text-muted-foreground">
                   {entry.action.replace(/_/g, ' ').toLowerCase()}
