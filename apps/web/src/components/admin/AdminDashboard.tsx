@@ -11,8 +11,8 @@ export function AdminDashboard() {
   ];
 
   return (
-    <div className="flex flex-col gap-6 relative">
-      <div className="sticky top-14 z-10 bg-background/95 backdrop-blur-sm py-4 mb-2 border-b border-border -mx-6 px-6">
+    <div className="flex flex-col gap-4 relative">
+      <div className="sticky z-10 bg-background/95 backdrop-blur-sm py-2 mb-2 border-b border-border -mx-6 px-6">
         <nav className="flex items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {navSections.map((section) => (
             <a

@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Plus, Search, MoreHorizontal, Pencil, Copy, FileText, Trash2, X } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Pencil, Copy, FileText, Trash2, X, Play } from 'lucide-react';
 import { PageHeader } from '../ui/page-header';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -100,7 +100,9 @@ export function TemplatesPage() {
             <Th>Status</Th>
             <Th>Created</Th>
             <Th className="text-right">Active</Th>
-            {isAdmin && <Th className="w-10">&nbsp;</Th>}
+            <Th className="text-right">
+              <span className="sr-only">Actions</span>
+            </Th>
           </TableHead>
           <TableBody>
             {visible.map((template) => (
@@ -136,8 +138,8 @@ export function TemplatesPage() {
                     <Switch disabled={!isAdmin} checked={template.isActive} onCheckedChange={() => toggleActive(template.id)} />
                   </span>
                 </Td>
-                {isAdmin && (
-                  <Td>
+                <Td className="text-right">
+                  {isAdmin ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
@@ -164,8 +166,22 @@ export function TemplatesPage() {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </Td>
-                )}
+                  ) : (
+                    template.isActive && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/tenantSlug/participant/templates/${template.id}`);
+                        }}
+                      >
+                        <Play className="h-3.5 w-3.5" />
+                        Use
+                      </Button>
+                    )
+                  )}
+                </Td>
               </tr>
             ))}
           </TableBody>
@@ -235,10 +251,17 @@ export function TemplatesPage() {
             <Button variant="outline" onClick={() => setSelectedTemplate(null)}>
               Close
             </Button>
-            {isAdmin && (
+            {isAdmin ? (
               <Button onClick={() => router.push(`/tenantSlug/admin/sows/${selectedTemplate.id}/edit`)}>
                 Edit Template
               </Button>
+            ) : (
+              selectedTemplate.isActive && (
+                <Button onClick={() => router.push(`/tenantSlug/participant/templates/${selectedTemplate.id}`)}>
+                  <Play className="h-4 w-4" />
+                  Use template
+                </Button>
+              )
             )}
           </div>
         </div>

@@ -3,17 +3,17 @@
 import Form from '@rjsf/core';
 import validator from '@rjsf/validator-ajv8';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { PageHeader } from '../ui/page-header';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { templates, widgets } from '../admin/sows/builder/widgets';
 import { useTemplateStore } from '../admin/sows/templateStore';
+import { useSowStore } from '../admin/sows/sowStore';
 
 export function TemplateFillPage({ templateId }: { templateId: string }) {
   const router = useRouter();
   const template = useTemplateStore((s) => s.templates.find((t) => t.id === templateId));
-  const [submitted, setSubmitted] = useState<Record<string, unknown> | null>(null);
+  const addSow = useSowStore((s) => s.addSow);
 
   if (!template) {
     return (
@@ -24,6 +24,16 @@ export function TemplateFillPage({ templateId }: { templateId: string }) {
         </Button>
       </div>
     );
+  }
+
+  const tpl = template;
+
+  function createSow(formData: Record<string, unknown>) {
+    const title = (formData.projectTitle as string)?.trim() || tpl.name;
+    const description =
+      (formData.projectDescription as string) || (formData.overview as string) || tpl.description || '';
+    addSow({ title, project: title, description, templateId: tpl.id, formData });
+    router.push('/tenantSlug/participant/sows/yard');
   }
 
   return (
@@ -40,7 +50,7 @@ export function TemplateFillPage({ templateId }: { templateId: string }) {
               validator={validator}
               widgets={widgets}
               templates={templates}
-              onSubmit={(e) => setSubmitted(e.formData ?? {})}
+              onSubmit={(e) => createSow(e.formData ?? {})}
             >
               <div className="pt-4">
                 <Button type="submit">Use this template</Button>
@@ -48,12 +58,6 @@ export function TemplateFillPage({ templateId }: { templateId: string }) {
             </Form>
           </CardContent>
         </Card>
-
-        {submitted && (
-          <p className="mt-4 text-sm text-muted-foreground">
-            Form answers captured. SOW creation from these answers will be wired up once the backend is ready.
-          </p>
-        )}
       </div>
     </div>
   );

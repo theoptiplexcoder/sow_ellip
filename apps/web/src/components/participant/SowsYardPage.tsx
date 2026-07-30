@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, FileText, Play, Check, X } from 'lucide-react';
+import { Search, FileText, Play, Check, X, Printer } from 'lucide-react';
 import { PageHeader } from '../ui/page-header';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -11,7 +11,9 @@ import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
 import { useTemplateStore } from '../admin/sows/templateStore';
 import { LivePreview } from '../admin/sows/builder/LivePreview';
-import { ADMIN_SOWS, type SowRow, type SowStatus } from '../admin/sows/sowData';
+import { FormValuesDocument } from '../admin/sows/builder/FormValuesDocument';
+import { useSowStore } from '../admin/sows/sowStore';
+import { type SowRow, type SowStatus } from '../admin/sows/sowData';
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: 'Draft',
@@ -61,7 +63,7 @@ export function SowsYardPage() {
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  const [sows, setSows] = useState<SowRow[]>(ADMIN_SOWS);
+  const sows = useSowStore((s) => s.sows);
   const [search, setSearch] = useState('');
   const [selectedSowId, setSelectedSowId] = useState<string | null>(null);
   const [publishedMessage, setPublishedMessage] = useState<string | null>(null);
@@ -215,21 +217,28 @@ export function SowsYardPage() {
       >
         {selectedSow && (
           <div
+            data-print-area
             className="fixed inset-0 z-40 overflow-y-auto bg-background p-4 md:sticky md:top-14 md:inset-auto md:z-auto md:flex md:h-[calc(100vh-3.5rem)] md:w-[var(--panel-w)] md:flex-col md:border-l md:border-border md:bg-muted/40 md:p-0"
           >
-            <ResizeHandle onPointerDown={startResize} className="hidden md:block" />
+            <ResizeHandle onPointerDown={startResize} className="hidden md:block no-print" />
             <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">{selectedSow.sowNumber}</h2>
                 <p className="text-sm text-muted-foreground">{selectedSow.title}</p>
               </div>
-              <button
-                type="button"
-                onClick={closeSidebar}
-                className="rounded-full p-2 hover:bg-muted transition-colors text-muted-foreground"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-1 no-print">
+                <Button variant="ghost" size="sm" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4" />
+                  Export to PDF
+                </Button>
+                <button
+                  type="button"
+                  onClick={closeSidebar}
+                  className="rounded-full p-2 hover:bg-muted transition-colors text-muted-foreground"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -249,7 +258,7 @@ export function SowsYardPage() {
                 <p className="text-sm leading-relaxed text-foreground">{selectedSow.description}</p>
               </div>
 
-              <div className="border-t border-border pt-6">
+              <div className="border-t border-border pt-6 no-print">
                 <h3 className="text-sm font-semibold text-foreground mb-4">Form Preview</h3>
                 {selectedTemplate ? (
                   <LivePreview
@@ -262,9 +271,18 @@ export function SowsYardPage() {
                   <EmptyState message="No template linked to this SOW" />
                 )}
               </div>
+
+              <div className="hidden border-t border-border pt-6 print:block">
+                <h3 className="text-sm font-semibold text-foreground mb-4">Form Values</h3>
+                {selectedTemplate ? (
+                  <FormValuesDocument schema={selectedTemplate.jsonSchema} formData={{}} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No template linked to this SOW</p>
+                )}
+              </div>
             </div>
 
-            <div className="border-t border-border p-4 flex items-center justify-end gap-3 shrink-0">
+            <div className="border-t border-border p-4 flex items-center justify-end gap-3 shrink-0 no-print">
               <Button variant="ghost" onClick={closeSidebar}>
                 Close
               </Button>

@@ -145,3 +145,29 @@ h4 {
     box-shadow: 0 8px 30px rgba(10, 59, 140, 0.08);
   }
 }
+
+/* Export to PDF via browser print: isolate [data-print-area] and let it escape
+   any scrollable/fixed-width ancestor so the full document paginates. */
+@media print {
+  * {
+    overflow: visible !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  [data-print-area],
+  [data-print-area] * {
+    visibility: visible;
+  }
+  [data-print-area] {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: none !important;
+    box-shadow: none !important;
+  }
+  [data-print-area] .no-print {
+    display: none !important;
+  }
+}

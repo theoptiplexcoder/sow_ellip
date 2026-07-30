@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { Plus, Search, FileText, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, FileText, MoreHorizontal, Printer } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
 import { PageHeader } from '../ui/page-header';
 import { Button } from '../ui/button';
@@ -12,22 +12,9 @@ import { Input } from '../ui/input';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
 import { useTemplateStore } from '../admin/sows/templateStore';
-import { LivePreview } from '../admin/sows/builder/LivePreview';
-
-type Status = 'DRAFT' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'REJECTED' | 'APPROVED' | 'PUBLISHED';
-
-type SowRow = {
-  id: string;
-  sowNumber: string;
-  title: string;
-  project: string;
-  status: Status;
-  version: number;
-  updatedAt: string;
-  description: string;
-  templateId: string;
-  awaitingApproval?: boolean;
-};
+import { FormValuesDocument } from '../admin/sows/builder/FormValuesDocument';
+import { useParticipantSowStore } from './participantSowStore';
+import { type SowRow, type SowStatus as Status } from './participantSowData';
 
 const STATUS_LABEL: Record<Status, string> = {
   DRAFT: 'Draft',
@@ -36,6 +23,7 @@ const STATUS_LABEL: Record<Status, string> = {
   REJECTED: 'Rejected',
   APPROVED: 'Approved',
   PUBLISHED: 'Published',
+  REQUIRES_APPROVAL: 'Requires Approval',
 };
 
 const STATUS_TONE: Record<Status, 'neutral' | 'info' | 'warning' | 'danger' | 'success'> = {
@@ -45,6 +33,7 @@ const STATUS_TONE: Record<Status, 'neutral' | 'info' | 'warning' | 'danger' | 's
   REJECTED: 'danger',
   APPROVED: 'success',
   PUBLISHED: 'success',
+  REQUIRES_APPROVAL: 'warning',
 };
 
 function statusLabelFor(sow: SowRow): string {
@@ -61,66 +50,8 @@ const STATUS_FILTERS: { label: string; value: 'ALL' | Status }[] = [
   { label: 'Changes requested', value: 'CHANGES_REQUESTED' },
   { label: 'Rejected', value: 'REJECTED' },
   { label: 'Approval', value: 'APPROVED' },
+  { label: 'Requires Approval', value: 'REQUIRES_APPROVAL' },
   { label: 'Draft', value: 'DRAFT' },
-];
-
-const SOWS: SowRow[] = [
-  {
-    id: 's-1',
-    sowNumber: 'SOW-1042',
-    title: 'Website revamp — Phase 1',
-    project: 'Website revamp',
-    status: 'IN_REVIEW',
-    version: 2,
-    updatedAt: '2026-07-20',
-    description: 'Redesign and rebuild of the client-facing marketing site, including a new component library, CMS integration, and a phased content migration from the legacy platform.',
-    templateId: 't-1',
-  },
-  {
-    id: 's-2',
-    sowNumber: 'SOW-1051',
-    title: 'Data migration plan',
-    project: 'Data migration',
-    status: 'CHANGES_REQUESTED',
-    version: 1,
-    updatedAt: '2026-07-25',
-    description: 'Migration of production data from the legacy on-prem warehouse to the new cloud data platform, covering schema mapping, validation, and a zero-downtime cutover plan.',
-    templateId: 't-2',
-  },
-  {
-    id: 's-3',
-    sowNumber: 'SOW-1055',
-    title: 'Support retainer renewal',
-    project: 'Support retainer',
-    status: 'REJECTED',
-    version: 1,
-    updatedAt: '2026-07-27',
-    description: 'Renewal of the ongoing monthly support retainer covering bug fixes, minor enhancements, and on-call incident response for the client\'s existing platform.',
-    templateId: 't-3',
-  },
-  {
-    id: 's-4',
-    sowNumber: 'SOW-1048',
-    title: 'Phase 2 scope addendum',
-    project: 'Website revamp',
-    status: 'APPROVED',
-    version: 1,
-    updatedAt: '2026-07-18',
-    description: 'Addendum covering additional Phase 2 deliverables for the website revamp, including a client portal login and account management screens not in the original scope.',
-    templateId: 't-1',
-  },
-  {
-    id: 's-5',
-    sowNumber: 'SOW-1060',
-    title: 'Cloud infrastructure migration',
-    project: 'Cloud migration',
-    status: 'DRAFT',
-    version: 1,
-    updatedAt: '2026-07-29',
-    description: 'Migration of core services to the new cloud infrastructure provider, including networking setup, security hardening, and a phased service cutover. Awaiting participant approval before work begins.',
-    templateId: 't-2',
-    awaitingApproval: true,
-  },
 ];
 
 type ReviewerComment = {
@@ -129,6 +60,7 @@ type ReviewerComment = {
   initials: string;
   text: string;
   postedAt: string;
+  fieldTag?: string;
 };
 
 const COMMENTS_BY_SOW: Record<string, ReviewerComment[]> = {
@@ -189,10 +121,12 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
   };
 
   const [search, setSearch] = useState('');
-  const [sows, setSows] = useState<SowRow[]>(SOWS);
+  const sows = useParticipantSowStore((s) => s.sows);
+  const setSowStatus = useParticipantSowStore((s) => s.setStatus);
   const [selectedSowId, setSelectedSowId] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, ReviewerComment[]>>(COMMENTS_BY_SOW);
   const [commentDraft, setCommentDraft] = useState('');
+  const [commentFieldTag, setCommentFieldTag] = useState('');
   const { width: sidebarWidth, startResize } = useResizableWidth(720, 360, 720);
   const templates = useTemplateStore((s) => s.templates);
 
@@ -202,11 +136,17 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
   function closeSidebar() {
     setSelectedSowId(null);
     setCommentDraft('');
+    setCommentFieldTag('');
   }
 
   function openSidebar(id: string) {
     setSelectedSowId(id);
     setCommentDraft('');
+    setCommentFieldTag('');
+  }
+
+  function editDocument(sowId: string) {
+    router.push(`/tenantSlug/participant/sows/edit?id=${sowId}`);
   }
 
   function logComment(sowId: string, text: string) {
@@ -216,6 +156,7 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
       initials: 'AY',
       text,
       postedAt: 'Just now',
+      fieldTag: commentFieldTag || undefined,
     };
     setComments((prev) => ({ ...prev, [sowId]: [...(prev[sowId] ?? []), comment] }));
   }
@@ -224,19 +165,24 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
     if (!selectedSow || !commentDraft.trim()) return;
     logComment(selectedSow.id, commentDraft.trim());
     setCommentDraft('');
+    setCommentFieldTag('');
   }
 
   function handleDecision(sowId: string, newStatus: Status, actionLabel: string) {
-    if (!commentDraft.trim()) return;
-    logComment(sowId, `${actionLabel}: ${commentDraft.trim()}`);
+    if (commentDraft.trim()) {
+      logComment(sowId, `${actionLabel}: ${commentDraft.trim()}`);
+    } else {
+      logComment(sowId, `Status updated to ${actionLabel}`);
+    }
     if (newStatus === 'PUBLISHED') {
       const segments = pathname.split('/').filter(Boolean);
       const basePath = segments.length >= 2 ? `/${segments[0]}/${segments[1]}` : '/tenantSlug/participant';
       router.push(`${basePath}/workflows/yard`);
       return;
     }
-    setSows((prev) => prev.map((s) => (s.id === sowId ? { ...s, status: newStatus } : s)));
+    setSowStatus(sowId, newStatus);
     setCommentDraft('');
+    setCommentFieldTag('');
   }
 
   function handlePublishSow(sowId: string) {
@@ -351,7 +297,12 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                             Publish
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); }}>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/tenantSlug/participant/sows/edit?id=${sow.id}`);
+                          }}
+                        >
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-red-600 hover:text-red-700" onClick={(e) => { e.stopPropagation(); }}>
@@ -374,21 +325,28 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
       >
         {selectedSow && (
           <div
+            data-print-area
             className="fixed inset-0 z-40 overflow-y-auto bg-background p-4 md:sticky md:top-14 md:inset-auto md:z-auto md:flex md:h-[calc(100vh-3.5rem)] md:w-[var(--panel-w)] md:flex-col md:border-l md:border-border md:bg-muted/40 md:p-0"
           >
-            <ResizeHandle onPointerDown={startResize} className="hidden md:block" />
+            <ResizeHandle onPointerDown={startResize} className="hidden md:block no-print" />
             <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">{selectedSow.sowNumber}</h2>
                 <p className="text-sm text-muted-foreground">{selectedSow.title}</p>
               </div>
-              <button
-                type="button"
-                onClick={closeSidebar}
-                className="rounded-full p-2 hover:bg-muted transition-colors text-muted-foreground"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
+              <div className="flex items-center gap-1 no-print">
+                <Button variant="ghost" size="sm" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4" />
+                  Export to PDF
+                </Button>
+                <button
+                  type="button"
+                  onClick={closeSidebar}
+                  className="rounded-full p-2 hover:bg-muted transition-colors text-muted-foreground"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -408,25 +366,25 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                 <p className="text-sm leading-relaxed text-foreground">{selectedSow.description}</p>
               </div>
 
-              <div className="border-t border-border pt-6">
+              <div className="border-t border-border pt-6 no-print">
                 <h3 className="text-sm font-semibold text-foreground mb-4">Form Preview</h3>
                 {selectedTemplate ? (
-                  <LivePreview
-                    key={selectedSow.id}
-                    schema={selectedTemplate.jsonSchema}
-                    uiSchema={selectedTemplate.uiSchema}
-                    defaultValues={{
-                      projectTitle: selectedSow.project,
-                      projectDescription: selectedSow.description,
-                      overview: 'Overview content for ' + selectedSow.title
-                    }}
-                  />
+                  <FormValuesDocument schema={selectedTemplate.jsonSchema} formData={selectedSow.formData ?? {}} />
                 ) : (
                   <EmptyState message="No template linked to this SOW" />
                 )}
               </div>
 
-              <div className="border-t border-border pt-6">
+              <div className="hidden border-t border-border pt-6 print:block">
+                <h3 className="text-sm font-semibold text-foreground mb-4">Form Values</h3>
+                {selectedTemplate ? (
+                  <FormValuesDocument schema={selectedTemplate.jsonSchema} formData={selectedSow.formData ?? {}} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No template linked to this SOW</p>
+                )}
+              </div>
+
+              <div className="border-t border-border pt-6 no-print">
                 <h3 className="text-sm font-semibold text-foreground mb-4">Reviewer Comments</h3>
                 {(() => {
                   const sowComments = comments[selectedSow.id] ?? [];
@@ -464,17 +422,43 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                             <span className="text-sm font-medium">{comment.author}</span>
                             <span className="text-xs text-muted-foreground ml-auto">{comment.postedAt}</span>
                           </div>
+                          {comment.fieldTag && (
+                            <div className="mb-2">
+                              <span className="inline-flex items-center rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                Tagged: {comment.fieldTag}
+                              </span>
+                            </div>
+                          )}
                           <p className="text-sm text-foreground">{comment.text}</p>
                         </div>
                       ))}
                     </div>
                   );
                 })()}
+                <div className="mt-3">
+                  <select
+                    value={commentFieldTag}
+                    onChange={(e) => setCommentFieldTag(e.target.value)}
+                    className="w-full rounded-md border border-border bg-card p-2 text-sm focus:border-primary focus:outline-none mb-2"
+                  >
+                    <option value="">-- Tag a field (Optional) --</option>
+                    {selectedTemplate?.jsonSchema?.properties &&
+                      Object.keys(selectedTemplate.jsonSchema.properties).map((key) => {
+                        const prop = (selectedTemplate.jsonSchema.properties as any)[key];
+                        const label = prop.title || key;
+                        return (
+                          <option key={key} value={label}>
+                            {label}
+                          </option>
+                        );
+                      })}
+                  </select>
+                </div>
                 <textarea
                   placeholder="Reply to comments..."
                   value={commentDraft}
                   onChange={(e) => setCommentDraft(e.target.value)}
-                  className="mt-3 w-full rounded-md border border-border bg-card p-3 text-sm focus:border-primary focus:bg-background focus:outline-none min-h-25 resize-none"
+                  className="w-full rounded-md border border-border bg-card p-3 text-sm focus:border-primary focus:bg-background focus:outline-none min-h-25 resize-none"
                 />
                 <Button className="w-full mt-3" disabled={!commentDraft.trim()} onClick={handlePostReply}>
                   Post Reply
@@ -483,8 +467,8 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
             </div>
 
             {selectedSow.awaitingApproval && selectedSow.status !== 'PUBLISHED' ? (
-              <div className="border-t border-border p-4 shrink-0 space-y-2">
-                {!commentDraft.trim() && (
+              <div className="border-t border-border p-4 shrink-0 space-y-2 no-print">
+                {!commentDraft.trim() && selectedSow.status !== 'REQUIRES_APPROVAL' && (
                   <p className="text-xs text-muted-foreground">
                     Log a comment above before you can review, approve, or reject this SOW.
                   </p>
@@ -493,17 +477,33 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                   <Button variant="ghost" onClick={closeSidebar}>
                     Close
                   </Button>
-                  <Button disabled={!commentDraft.trim()} onClick={() => handleDecision(selectedSow.id, 'PUBLISHED', 'Published')}>
-                    Publish
-                  </Button>
+                  {selectedSow.status === 'REQUIRES_APPROVAL' ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleDecision(selectedSow.id, 'CHANGES_REQUESTED', 'Requested Changes')}
+                      >
+                        Request Changes
+                      </Button>
+                      <Button
+                        onClick={() => handleDecision(selectedSow.id, 'APPROVED', 'Approved')}
+                      >
+                        Approve
+                      </Button>
+                    </>
+                  ) : (
+                    <Button disabled={!commentDraft.trim()} onClick={() => handleDecision(selectedSow.id, 'PUBLISHED', 'Published')}>
+                      Publish
+                    </Button>
+                  )}
                 </div>
               </div>
             ) : (
-              <div className="border-t border-border p-4 flex items-center justify-end gap-3 shrink-0">
+              <div className="border-t border-border p-4 flex items-center justify-end gap-3 shrink-0 no-print">
                 <Button variant="ghost" onClick={closeSidebar}>
                   Close
                 </Button>
-                <Button>Edit Document</Button>
+                <Button onClick={() => editDocument(selectedSow.id)}>Edit Document</Button>
               </div>
             )}
           </div>

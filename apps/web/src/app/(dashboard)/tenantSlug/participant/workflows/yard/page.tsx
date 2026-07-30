@@ -1,5 +1,5 @@
-import { WorkflowYardPage } from '../../../../../../components/participant/WorkflowYardPage';
+import { WorkflowYardPage } from '../../../../../../components/admin/WorkflowYardPage';
 
 export default function ParticipantWorkflowYardPage() {
-  return <WorkflowYardPage />;
+  return <WorkflowYardPage readOnly />;
 }

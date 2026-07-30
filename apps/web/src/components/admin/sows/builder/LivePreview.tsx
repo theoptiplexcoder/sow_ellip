@@ -33,10 +33,12 @@ export function LivePreview({
   schema,
   uiSchema,
   defaultValues,
+  onFormDataChange,
 }: {
   schema: RJSFSchema;
   uiSchema: UiSchema;
   defaultValues: Record<string, unknown>;
+  onFormDataChange?: (formData: Record<string, unknown>) => void;
 }) {
   const [formData, setFormData] = useState<Record<string, unknown>>(defaultValues);
   const customMessages = collectErrorMessages(uiSchema);
@@ -61,7 +63,11 @@ export function LivePreview({
         templates={{ ...templates, ...fieldTemplates }}
         formContext={{ rootFormData: formData }}
         transformErrors={transformErrors}
-        onChange={(e) => setFormData(e.formData ?? {})}
+        onChange={(e) => {
+          const next = e.formData ?? {};
+          setFormData(next);
+          onFormDataChange?.(next);
+        }}
       >
         <div />
       </Form>

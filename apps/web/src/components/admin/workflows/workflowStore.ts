@@ -167,6 +167,7 @@ type WorkflowStore = {
   updateWorkflow: (id: string, input: WorkflowInput) => void;
   deleteWorkflow: (id: string) => void;
   publishWorkflow: (id: string) => void;
+  attachSow: (workflowId: string, sow: SowLink) => void;
 };
 
 export const useWorkflowStore = create<WorkflowStore>()(
@@ -212,6 +213,16 @@ export const useWorkflowStore = create<WorkflowStore>()(
         set((state) => ({
           workflows: state.workflows.map((w) =>
             w.id === id ? { ...w, status: 'PUBLISHED' } : w,
+          ),
+        }));
+      },
+
+      attachSow: (workflowId, sow) => {
+        set((state) => ({
+          workflows: state.workflows.map((w) =>
+            w.id === workflowId && !w.sows.some((s) => s.id === sow.id)
+              ? { ...w, sows: [...w.sows, sow] }
+              : w,
           ),
         }));
       },

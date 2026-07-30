@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { Plus, Search, FileText, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, FileText, MoreHorizontal, Printer } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
 import { PageHeader } from '../ui/page-header';
 import { Button } from '../ui/button';
@@ -12,25 +12,34 @@ import { Input } from '../ui/input';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
 import { useTemplateStore } from './sows/templateStore';
-import { LivePreview } from './sows/builder/LivePreview';
-import { ADMIN_SOWS, type SowRow, type SowStatus as Status } from './sows/sowData';
+import { FormValuesDocument } from './sows/builder/FormValuesDocument';
+import { useSowStore } from './sows/sowStore';
+import { type SowRow, type SowStatus as Status } from './sows/sowData';
 
 const STATUS_LABEL: Record<Status, string> = {
   DRAFT: 'Draft',
   PUBLISHED: 'Published',
+  APPROVED: 'Approved',
+  CHANGES_REQUESTED: 'Changes requested',
 };
 
 const STATUS_TONE: Record<Status, 'neutral' | 'info' | 'warning' | 'danger' | 'success'> = {
   DRAFT: 'neutral',
   PUBLISHED: 'success',
+  APPROVED: 'success',
+  CHANGES_REQUESTED: 'warning',
 };
 
+function requiresApproval(sow: SowRow): boolean {
+  return !!sow.awaitingApproval && sow.status === 'DRAFT';
+}
+
 function statusLabelFor(sow: SowRow): string {
-  return STATUS_LABEL[sow.status];
+  return requiresApproval(sow) ? 'Requires approval' : STATUS_LABEL[sow.status];
 }
 
 function statusToneFor(sow: SowRow): 'neutral' | 'info' | 'warning' | 'danger' | 'success' {
-  return STATUS_TONE[sow.status];
+  return requiresApproval(sow) ? 'warning' : STATUS_TONE[sow.status];
 }
 
 const STATUS_FILTERS: { label: string; value: 'ALL' | Status }[] = [
@@ -38,8 +47,6 @@ const STATUS_FILTERS: { label: string; value: 'ALL' | Status }[] = [
   { label: 'Published', value: 'PUBLISHED' },
   { label: 'Draft', value: 'DRAFT' },
 ];
-
-const SOWS: SowRow[] = ADMIN_SOWS;
 
 type ReviewerComment = {
   id: string;
@@ -91,7 +98,8 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
   };
 
   const [search, setSearch] = useState('');
-  const [sows, setSows] = useState<SowRow[]>(SOWS);
+  const sows = useSowStore((s) => s.sows);
+  const setSowStatus = useSowStore((s) => s.setStatus);
   const [selectedSowId, setSelectedSowId] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, ReviewerComment[]>>(COMMENTS_BY_SOW);
   const [commentDraft, setCommentDraft] = useState('');
@@ -109,6 +117,10 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
   function openSidebar(id: string) {
     setSelectedSowId(id);
     setCommentDraft('');
+  }
+
+  function editDocument(sowId: string) {
+    router.push(`/tenantSlug/admin/sows/edit?id=${sowId}`);
   }
 
   function logComment(sowId: string, text: string) {
@@ -131,12 +143,12 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
   function handleDecision(sowId: string, newStatus: Status, actionLabel: string) {
     if (!commentDraft.trim()) return;
     logComment(sowId, `${actionLabel}: ${commentDraft.trim()}`);
-    setSows((prev) => prev.map((s) => (s.id === sowId ? { ...s, status: newStatus } : s)));
+    setSowStatus(sowId, newStatus);
     setCommentDraft('');
   }
 
   function handlePublishSow(sowId: string) {
-    setSows((prev) => prev.map((s) => (s.id === sowId ? { ...s, status: 'PUBLISHED' } : s)));
+    setSowStatus(sowId, 'PUBLISHED');
   }
 
   const visible = sows.filter(
@@ -245,7 +257,12 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                             Publish
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); }}>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            editDocument(sow.id);
+                          }}
+                        >
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-red-600 hover:text-red-700" onClick={(e) => { e.stopPropagation(); }}>
@@ -268,22 +285,29 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
       >
         {selectedSow && (
           <div
+            data-print-area
             className="fixed inset-0 z-40 flex flex-col bg-background md:sticky md:top-14 md:inset-auto md:z-auto md:h-[calc(100vh-3.5rem)] md:w-[var(--panel-w)] md:border-l md:border-border md:bg-muted/40"
             style={{ ['--panel-w' as any]: `${sidebarWidth}px` }}
           >
-            <ResizeHandle onPointerDown={startResize} className="hidden md:block" />
+            <ResizeHandle onPointerDown={startResize} className="hidden md:block no-print" />
             <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">{selectedSow.sowNumber}</h2>
                 <p className="text-sm text-muted-foreground">{selectedSow.title}</p>
               </div>
-              <button
-                type="button"
-                onClick={closeSidebar}
-                className="rounded-full p-2 hover:bg-muted transition-colors text-muted-foreground"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
+              <div className="flex items-center gap-1 no-print">
+                <Button variant="ghost" size="sm" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4" />
+                  Export to PDF
+                </Button>
+                <button
+                  type="button"
+                  onClick={closeSidebar}
+                  className="rounded-full p-2 hover:bg-muted transition-colors text-muted-foreground"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -303,21 +327,24 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                 <p className="text-sm leading-relaxed text-foreground">{selectedSow.description}</p>
               </div>
 
-              <div className="border-t border-border pt-6">
+              <div className="border-t border-border pt-6 no-print">
                 <h3 className="text-sm font-semibold text-foreground mb-4">Form Preview</h3>
                 {selectedTemplate ? (
-                  <LivePreview
-                    key={selectedSow.id}
-                    schema={selectedTemplate.jsonSchema}
-                    uiSchema={selectedTemplate.uiSchema}
-                    defaultValues={{}}
-                  />
+                  <FormValuesDocument schema={selectedTemplate.jsonSchema} formData={selectedSow.formData ?? {}} />
                 ) : (
                   <EmptyState message="No template linked to this SOW" />
                 )}
               </div>
 
-              <div className="border-t border-border pt-6">
+              <div className="hidden border-t border-border pt-6 print:block">
+                {selectedTemplate ? (
+                  <FormValuesDocument schema={selectedTemplate.jsonSchema} formData={selectedSow.formData ?? {}} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No template linked to this SOW</p>
+                )}
+              </div>
+
+              <div className="border-t border-border pt-6 no-print">
                 <h3 className="text-sm font-semibold text-foreground mb-4">Reviewer Comments</h3>
                 {(() => {
                   const sowComments = comments[selectedSow.id] ?? [];
@@ -373,8 +400,8 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
               </div>
             </div>
 
-            {selectedSow.awaitingApproval && selectedSow.status !== 'PUBLISHED' ? (
-              <div className="border-t border-border p-4 shrink-0 space-y-2">
+            {requiresApproval(selectedSow) ? (
+              <div className="border-t border-border p-4 shrink-0 space-y-2 no-print">
                 {!commentDraft.trim() && (
                   <p className="text-xs text-muted-foreground">
                     Log a comment above before you can review, approve, or reject this SOW.
@@ -384,17 +411,24 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                   <Button variant="ghost" onClick={closeSidebar}>
                     Close
                   </Button>
-                  <Button disabled={!commentDraft.trim()} onClick={() => handleDecision(selectedSow.id, 'PUBLISHED', 'Published')}>
-                    Publish
+                  <Button
+                    variant="outline"
+                    disabled={!commentDraft.trim()}
+                    onClick={() => handleDecision(selectedSow.id, 'CHANGES_REQUESTED', 'Changes requested')}
+                  >
+                    Changes Requested
+                  </Button>
+                  <Button disabled={!commentDraft.trim()} onClick={() => handleDecision(selectedSow.id, 'APPROVED', 'Approved')}>
+                    Approved
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="border-t border-border p-4 flex items-center justify-end gap-3 shrink-0">
+              <div className="border-t border-border p-4 flex items-center justify-end gap-3 shrink-0 no-print">
                 <Button variant="ghost" onClick={closeSidebar}>
                   Close
                 </Button>
-                <Button>Edit Document</Button>
+                <Button onClick={() => editDocument(selectedSow.id)}>Edit Document</Button>
               </div>
             )}
           </div>

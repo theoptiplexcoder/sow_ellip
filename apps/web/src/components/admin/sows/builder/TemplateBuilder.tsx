@@ -17,12 +17,16 @@ export function TemplateBuilder({
   schemaOverride,
   onSchemaOverrideChange,
   version,
+  formData,
+  onFormDataChange,
 }: {
   fields: FieldDraft[];
   onFieldsChange: (fields: FieldDraft[]) => void;
   schemaOverride: SchemaOverride | null;
   onSchemaOverrideChange: (override: SchemaOverride | null) => void;
   version: number;
+  formData?: Record<string, unknown>;
+  onFormDataChange?: (formData: Record<string, unknown>) => void;
 }) {
   const [selectedPath, setSelectedPath] = useState<number[] | null>(null);
 
@@ -164,7 +168,12 @@ export function TemplateBuilder({
       </TabsContent>
 
       <TabsContent value="preview">
-        <LivePreview schema={active.jsonSchema} uiSchema={active.uiSchema} defaultValues={active.defaultValues} />
+        <LivePreview
+          schema={active.jsonSchema}
+          uiSchema={active.uiSchema}
+          defaultValues={formData ?? active.defaultValues}
+          onFormDataChange={onFormDataChange}
+        />
       </TabsContent>
     </Tabs>
   );
