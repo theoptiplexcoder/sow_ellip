@@ -8,18 +8,21 @@ export function Switch({
   onCheckedChange,
   label,
   className,
+  disabled,
 }: {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   label?: string;
   className?: string;
+  disabled?: boolean;
 }) {
   return (
     <label className={cn('inline-flex items-center gap-2', className)}>
       <RadixSwitch.Root
         checked={checked}
         onCheckedChange={onCheckedChange}
-        className="relative h-5 w-9 rounded-full bg-muted transition-colors data-[state=checked]:bg-primary"
+        disabled={disabled}
+        className="relative h-5 w-9 rounded-full bg-muted transition-colors data-[state=checked]:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <RadixSwitch.Thumb className="block h-4 w-4 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[state=checked]:translate-x-[18px]" />
       </RadixSwitch.Root>
