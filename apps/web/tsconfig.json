@@ -46,6 +46,23 @@
     "**/*.spec.ts",
     "**/*.test.ts",
     "src/**/*.spec.ts",
-    "src/**/*.test.ts"
+    "src/**/*.test.ts",
+    "src/components/admin/sows/pm/**/*",
+    "src/components/admin/sows/TemplateBuilder.tsx",
+    "src/components/admin/sows/SowEditorPage.tsx",
+    "src/components/admin/sows/builder/Canvas.tsx",
+    "src/components/admin/sows/builder/FieldPalette.tsx",
+    "src/components/admin/sows/builder/PropertyPanel.tsx",
+    "src/components/admin/sows/builder/ConditionalLogicEditor.tsx",
+    "src/components/admin/sows/builder/LivePreview.tsx",
+    "src/components/admin/sows/builder/ValidationEditor.tsx",
+    "src/components/admin/sows/builder/FormValuesDocument.tsx",
+    "src/components/admin/sows/builder/widgets.tsx",
+    "src/components/admin/sows/builder/treeOps.ts",
+    "src/components/admin/sows/builder/conditionalEngine.ts",
+    "src/components/admin/sows/builder/FormulaEditor.tsx",
+    "src/components/admin/sows/builder/TemplateToolbar.tsx",
+    "src/components/admin/sows/builder/mockDirectory.ts",
+    "src/components/admin/sows/builder/TemplateBuilder.tsx"
   ]
 }
