@@ -44,12 +44,8 @@ export const DASHBOARD_ROLES: Record<
       },
       {
         label: 'Workflows',
-        href: '/admin/workflows',
+        href: '/admin/workflowyard',
         icon: GitPullRequest,
-        subItems: [
-          { label: 'Published', href: '/admin/workflows?status=PUBLISHED' },
-          { label: 'Draft', href: '/admin/workflowyard?status=DRAFT' },
-        ],
       },
       { label: 'Audit Log', href: '/admin/auditlogs', icon: History },
     ],

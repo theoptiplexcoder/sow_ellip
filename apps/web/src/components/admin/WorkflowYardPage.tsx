@@ -27,12 +27,14 @@ const emptyForm = {
 
 interface WorkflowYardPageProps {
   readOnly?: boolean;
+  isParticipant?: boolean;
 }
 
-export function WorkflowYardPage({ readOnly = false }: WorkflowYardPageProps = {}) {
+export function WorkflowYardPage({ readOnly = false, isParticipant = false }: WorkflowYardPageProps = {}) {
   const workflows = useWorkflowStore((s) => s.workflows);
   const addWorkflow = useWorkflowStore((s) => s.addWorkflow);
   const updateWorkflow = useWorkflowStore((s) => s.updateWorkflow);
+  const publishWorkflow = useWorkflowStore((s) => s.publishWorkflow);
   const deleteWorkflowFromStore = useWorkflowStore((s) => s.deleteWorkflow);
   const attachSow = useWorkflowStore((s) => s.attachSow);
   const sows = useSowStore((s) => s.sows);
@@ -427,7 +429,7 @@ export function WorkflowYardPage({ readOnly = false }: WorkflowYardPageProps = {
                   <Td className="text-muted-foreground">{workflow.sows.length}</Td>
                   <Td>
                     <div className="flex items-center justify-end gap-1">
-                      {workflow.status === 'PUBLISHED' && (
+                      {workflow.status === 'PUBLISHED' && isParticipant && (
                         <Button
                           type="button"
                           size="sm"
@@ -456,7 +458,7 @@ export function WorkflowYardPage({ readOnly = false }: WorkflowYardPageProps = {
                             {workflow.status === 'DRAFT' && (
                               <DropdownMenuItem
                                 onClick={() => {
-                                  updateWorkflow(workflow.id, { status: 'PUBLISHED' });
+                                  publishWorkflow(workflow.id);
                                   setPublishedMessage(`Workflow "${workflow.name}" has been published`);
                                 }}
                               >
@@ -543,7 +545,7 @@ export function WorkflowYardPage({ readOnly = false }: WorkflowYardPageProps = {
               <Button variant="outline" onClick={() => setSelectedWorkflow(null)}>
                 Close
               </Button>
-              {selectedWorkflow.status === 'PUBLISHED' && (
+              {selectedWorkflow.status === 'PUBLISHED' && isParticipant && (
                 <Button onClick={() => openUse(selectedWorkflow)}>
                   <Play className="h-4 w-4" />
                   Use

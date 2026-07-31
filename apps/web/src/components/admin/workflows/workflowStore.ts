@@ -49,7 +49,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
           id: `w-${Date.now()}`,
           name: input.name,
           description: input.description,
-          status: 'DRAFT',
+          status: 'PUBLISHED',
           steps: input.steps,
           sows: [],
         };
