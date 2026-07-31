@@ -453,6 +453,17 @@ export function WorkflowYardPage({ readOnly = false }: WorkflowYardPageProps = {
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
+                            {workflow.status === 'DRAFT' && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  updateWorkflow(workflow.id, { status: 'PUBLISHED' });
+                                  setPublishedMessage(`Workflow "${workflow.name}" has been published`);
+                                }}
+                              >
+                                <Play className="mr-2 h-3.5 w-3.5" />
+                                Publish
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => openEdit(workflow)}>
                               <Pencil className="mr-2 h-3.5 w-3.5" />
                               Edit
