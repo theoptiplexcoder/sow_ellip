@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { Printer } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
+import { PrintHeader } from '../../ui/print-header';
 import type { Step } from '@sow/workflows';
 import { PMCanvas, type PMCanvasHandle } from './pm/PMCanvas';
 import type { DocJSON } from './pm/docConvert';
@@ -71,6 +72,7 @@ export function TemplateBuilder({ templateId }: TemplateBuilderProps) {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6" data-print-area>
+          <PrintHeader />
           <PMCanvas
             ref={canvasRef}
             body={body}

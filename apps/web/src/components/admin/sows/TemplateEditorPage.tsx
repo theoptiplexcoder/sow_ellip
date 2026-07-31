@@ -27,7 +27,7 @@ export function TemplateEditorPage({ templateId }: { templateId?: string }) {
     router.push('/tenantSlug/admin/sows');
   }
 
-  function handleSave() {
+  function handleSave(isActive: boolean) {
     const trimmed = name.trim();
     if (!trimmed) {
       setNameError('Name is required.');
@@ -47,7 +47,7 @@ export function TemplateEditorPage({ templateId }: { templateId?: string }) {
       fields: [],
       body,
       schemaOverride: docToSchemaOverride(body),
-      isActive: editing?.isActive ?? true,
+      isActive,
     };
     console.log('Template created/saved:', payload);
     upsertTemplate(payload);
@@ -60,12 +60,17 @@ export function TemplateEditorPage({ templateId }: { templateId?: string }) {
         title={editing ? 'Edit template' : 'New template'}
         description="Type the template as a document; sections become form fields automatically."
         actions={
-          <>
+          <div className="flex gap-2">
             <Button variant="ghost" onClick={goToList}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>{editing ? 'Save changes' : 'Create template'}</Button>
-          </>
+            <Button variant="outline" onClick={() => handleSave(false)}>
+              Save as Draft
+            </Button>
+            <Button onClick={() => handleSave(true)}>
+              Publish
+            </Button>
+          </div>
         }
       />
 

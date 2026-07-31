@@ -16,14 +16,12 @@ import { WorkflowDiagram } from './workflows/WorkflowDiagram';
 import { StepApproversEditor } from './workflows/StepApproversEditor';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
-import { APPROVERS, STEP_ROLES, approverName, approverDesignation, emptyStep, matchTypeForApproverCount, type MatchType, type Step, type StepRole } from '@sow/workflows';
+import { STEP_ROLES, matchTypeForApproverCount, type MatchType, type Step, type StepRole } from '@sow/workflows';
 import { useWorkflowStore, type WorkflowRow, type WorkflowStatus as Status } from './workflows/workflowStore';
+import { useTeamStore } from './teamStore';
+import { useParticipantSowStore } from '../participant/participantSowStore';
 
-const emptyForm = {
-  name: '',
-  description: '',
-  steps: [emptyStep()] as Step[],
-};
+
 
 interface WorkflowsPageProps {
   readOnly?: boolean;
@@ -35,14 +33,27 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
   const updateWorkflow = useWorkflowStore((s) => s.updateWorkflow);
   const deleteWorkflowFromStore = useWorkflowStore((s) => s.deleteWorkflow);
   const publishWorkflowInStore = useWorkflowStore((s) => s.publishWorkflow);
+  const attachSowToWorkflowStore = useWorkflowStore((s) => s.attachSow);
+  const participantSows = useParticipantSowStore((s) => s.sows);
+  const setParticipantSowStatus = useParticipantSowStore((s) => s.setStatus);
+  const draftSows = participantSows.filter(s => s.status === 'DRAFT');
+  const members = useTeamStore((s) => s.members);
+  const getEmptyForm = () => ({
+    name: '',
+    description: '',
+    steps: [{ label: '', approverIds: [members[0]?.id ?? 'u-1'], matchType: 'NA', role: 'APPROVER' }] as Step[],
+  });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<WorkflowRow | null>(null);
   const [deleting, setDeleting] = useState<WorkflowRow | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(getEmptyForm());
   const [nameError, setNameError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRow | null>(null);
   const [selectedSowId, setSelectedSowId] = useState<string | null>(null);
+  const [addingSowTarget, setAddingSowTarget] = useState<WorkflowRow | null>(null);
+  const [draftSowSelectionId, setDraftSowSelectionId] = useState<string>('');
+  const selectedWorkflowLatest = selectedWorkflow ? workflows.find((w) => w.id === selectedWorkflow.id) : null;
   const { width: sidebarWidth, startResize } = useResizableWidth(720, 360, 720);
   const router = useRouter();
   const pathname = usePathname();
@@ -73,7 +84,7 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
 
   function openCreate() {
     setEditing(null);
-    setForm({ name: '', description: '', steps: [emptyStep()] });
+    setForm(getEmptyForm());
     setNameError(null);
     setOpen(true);
   }
@@ -90,7 +101,7 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
   }
 
   function addStep() {
-    setForm((f) => ({ ...f, steps: [...f.steps, emptyStep()] }));
+    setForm((f) => ({ ...f, steps: [...f.steps, { label: '', approverIds: [members[0]?.id ?? 'u-1'], matchType: 'NA', role: 'APPROVER' } as Step] }));
   }
 
   function removeStep(index: number) {
@@ -134,6 +145,21 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
   function handleDelete(id: string) {
     deleteWorkflowFromStore(id);
     setDeleting(null);
+  }
+
+  function handleAddSowConfirm() {
+    if (!addingSowTarget || !draftSowSelectionId) return;
+    const sow = participantSows.find(s => s.id === draftSowSelectionId);
+    if (!sow) return;
+
+    attachSowToWorkflowStore(addingSowTarget.id, {
+      id: sow.id,
+      sowNumber: sow.sowNumber,
+      title: sow.title,
+      currentStep: 0,
+    });
+    setParticipantSowStatus(sow.id, 'IN_REVIEW');
+    setAddingSowTarget(null);
   }
 
   function handlePublishWorkflow(id: string) {
@@ -212,7 +238,7 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
                           />
                           <StepApproversEditor
                             approverIds={step.approverIds}
-                            approvers={APPROVERS}
+                            approvers={members.map(m => ({ id: m.id, name: m.name, designation: m.designation }))}
                             matchType={step.matchType}
                             onChange={(patch) => updateStep(index, patch)}
                           />
@@ -425,21 +451,25 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
       )}
     </div>
 
-    <div
-      className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out w-0! md:w-(--panel-w)! md:-mt-6 md:-mb-6 md:-mr-6"
-      style={{ ['--panel-w' as any]: `${selectedWorkflow ? sidebarWidth : 0}px`, opacity: selectedWorkflow ? 1 : 0 }}
-    >
-      {selectedWorkflow && (
-        <div
-          className="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-background md:sticky md:top-14 md:inset-auto md:z-auto md:h-[calc(100vh-3.5rem)] md:w-(--panel-w) md:overflow-visible md:border-l md:border-border md:bg-muted/40"
-          style={{ ['--panel-w' as any]: `${sidebarWidth}px` }}
-        >
+    <div className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out w-0! md:w-[var(--panel-w)]! md:-mt-6 md:-mb-6 md:-mr-6" style={{ ['--panel-w' as any]: `${selectedWorkflowLatest ? sidebarWidth : 0}px`, opacity: selectedWorkflowLatest ? 1 : 0 }}>
+      {selectedWorkflowLatest && (
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-background p-4 md:sticky md:top-14 md:inset-auto md:z-auto md:flex md:h-[calc(100vh-3.5rem)] md:w-[var(--panel-w)] md:flex-col md:border-l md:border-border md:bg-muted/40 md:p-0">
           <ResizeHandle onPointerDown={startResize} className="hidden md:block" />
           <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
             <div>
-              <h2 className="text-lg font-semibold text-foreground">{selectedWorkflow.name}</h2>
-              {selectedWorkflow.description && (
-                <p className="text-sm text-muted-foreground">{selectedWorkflow.description}</p>
+              <h2 className="text-lg font-semibold text-foreground">{selectedWorkflowLatest.name}</h2>
+              <div className="mt-1 flex items-center gap-2">
+                <Badge tone={selectedWorkflowLatest.status === 'PUBLISHED' ? 'success' : 'neutral'}>
+                  {selectedWorkflowLatest.status === 'PUBLISHED' ? 'Published' : 'Draft'}
+                </Badge>
+                <span className="text-sm text-muted-foreground">ID: {selectedWorkflowLatest.id}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              {selectedWorkflowLatest.status === 'DRAFT' && !readOnly && (
+                <Button variant="ghost" size="sm" onClick={() => handlePublishWorkflow(selectedWorkflowLatest.id)}>
+                  Publish Workflow
+                </Button>
               )}
             </div>
             <button
@@ -452,26 +482,38 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div>
-                <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Status</h3>
-                <Badge tone={selectedWorkflow.status === 'PUBLISHED' ? 'success' : 'neutral'}>
-                  {selectedWorkflow.status === 'PUBLISHED' ? 'Published' : 'Draft'}
-                </Badge>
-              </div>
+            <div>
+              <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Description</h3>
+              <p className="text-sm leading-relaxed text-foreground">
+                {selectedWorkflowLatest.description || 'No description provided.'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Steps</h3>
-                <p className="text-sm font-medium text-foreground">{selectedWorkflow.steps.length}</p>
+                <p className="text-sm font-medium text-foreground">{selectedWorkflowLatest.steps.length}</p>
               </div>
               <div>
                 <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">SOWs</h3>
-                <p className="text-sm font-medium text-foreground">{selectedWorkflow.sows.length}</p>
+                <p className="text-sm font-medium text-foreground">{selectedWorkflowLatest.sows.length}</p>
               </div>
             </div>
 
             <div className="border-t border-border pt-6">
-              <h3 className="text-sm font-semibold text-foreground mb-4">Linked SOWs</h3>
-              {selectedWorkflow.sows.length === 0 ? (
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-foreground">Linked SOWs</h3>
+                {selectedWorkflowLatest.status === 'PUBLISHED' && (
+                  <Button size="sm" variant="outline" onClick={() => {
+                    setAddingSowTarget(selectedWorkflowLatest);
+                    setDraftSowSelectionId(draftSows[0]?.id ?? '');
+                  }}>
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    Add SOW
+                  </Button>
+                )}
+              </div>
+              {selectedWorkflowLatest.sows.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border p-6 text-center">
                   <p className="text-sm font-medium text-foreground">No SOWs yet</p>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -480,26 +522,49 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {selectedWorkflow.sows.map((sow) => (
-                    <button
-                      type="button"
-                      key={sow.id}
-                      onClick={() => setSelectedSowId(selectedSowId === sow.id ? null : sow.id)}
-                      className={`flex w-full items-center gap-2.5 rounded-lg border p-3 text-left transition-colors ${
-                        selectedSowId === sow.id
-                          ? 'border-primary bg-accent'
-                          : 'border-border bg-card hover:bg-muted/40'
-                      }`}
-                    >
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
-                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-foreground">{sow.sowNumber}</div>
-                        <div className="text-xs text-muted-foreground">{sow.title}</div>
-                      </div>
-                    </button>
-                  ))}
+                  {selectedWorkflowLatest.sows.map((sow) => {
+                    const actualSow = participantSows.find(s => s.id === sow.id) || adminSows.find(s => s.id === sow.id);
+                    const sowStatus = actualSow?.status || 'DRAFT';
+                    const toneMap: Record<string, 'neutral' | 'info' | 'warning' | 'danger' | 'success'> = {
+                      DRAFT: 'neutral',
+                      IN_REVIEW: 'info',
+                      CHANGES_REQUESTED: 'warning',
+                      APPROVED: 'success',
+                      PUBLISHED: 'success',
+                      REJECTED: 'danger',
+                    };
+                    const labelMap: Record<string, string> = {
+                      DRAFT: 'Draft',
+                      IN_REVIEW: 'In Review',
+                      CHANGES_REQUESTED: 'Changes requested',
+                      APPROVED: 'Approved',
+                      PUBLISHED: 'Published',
+                      REJECTED: 'Rejected',
+                    };
+                    return (
+                      <button
+                        type="button"
+                        key={sow.id}
+                        onClick={() => setSelectedSowId(selectedSowId === sow.id ? null : sow.id)}
+                        className={`flex w-full items-center justify-between gap-2.5 rounded-lg border p-3 text-left transition-colors ${
+                          selectedSowId === sow.id
+                            ? 'border-primary bg-accent'
+                            : 'border-border bg-card hover:bg-muted/40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
+                            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium text-foreground">{sow.sowNumber}</div>
+                            <div className="text-xs text-muted-foreground truncate">{sow.title}</div>
+                          </div>
+                        </div>
+                        <Badge tone={toneMap[sowStatus]}>{labelMap[sowStatus] || sowStatus}</Badge>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -509,18 +574,18 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
                 <h3 className="text-sm font-semibold text-foreground mb-4">
                   Approval Flow
                   {(() => {
-                    const sow = selectedWorkflow.sows.find((s) => s.id === selectedSowId);
+                    const sow = selectedWorkflowLatest.sows.find((s) => s.id === selectedSowId);
                     return sow ? ` — ${sow.sowNumber}` : '';
                   })()}
                 </h3>
                 {(() => {
-                  const sow = selectedWorkflow.sows.find((s) => s.id === selectedSowId);
+                  const sow = selectedWorkflowLatest.sows.find((s) => s.id === selectedSowId);
                   if (!sow) return null;
                   return (
                     <WorkflowDiagram
-                      steps={selectedWorkflow.steps}
-                      approverName={approverName}
-                      approverDesignation={approverDesignation}
+                      steps={selectedWorkflowLatest.steps}
+                      approverName={(id) => members.find(m => m.id === id)?.name ?? 'Unknown'}
+                      approverDesignation={(id) => members.find(m => m.id === id)?.designation ?? ''}
                       currentStep={sow.currentStep}
                     />
                   );
@@ -533,11 +598,46 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
             <Button variant="outline" onClick={() => selectWorkflow(null)}>
               Close
             </Button>
-            {!readOnly && <Button onClick={() => openEdit(selectedWorkflow)}>Edit Workflow</Button>}
+            {!readOnly && <Button onClick={() => openEdit(selectedWorkflowLatest)}>Edit Workflow</Button>}
           </div>
         </div>
       )}
     </div>
+
+    <Dialog open={!!addingSowTarget} onOpenChange={(val) => !val && setAddingSowTarget(null)}>
+      <DialogContent title="Add SOW to Workflow" className="max-w-md">
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Select a Draft SOW to attach to this workflow. Its status will be updated to In Review.
+          </p>
+          {draftSows.length === 0 ? (
+            <EmptyState message="No Draft SOWs available" />
+          ) : (
+            <div>
+              <Label>Select Draft SOW</Label>
+              <Select value={draftSowSelectionId} onValueChange={setDraftSowSelectionId}>
+                <SelectTrigger />
+                <SelectContent>
+                  {draftSows.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.sowNumber} — {s.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" onClick={() => setAddingSowTarget(null)}>
+              Cancel
+            </Button>
+            <Button type="button" disabled={!draftSowSelectionId} onClick={handleAddSowConfirm}>
+              Add SOW
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
     </div>
   );
 }

@@ -11,19 +11,25 @@ import { Table, TableHead, TableBody, Th, Td, EmptyState } from '../ui/table';
 import { Input } from '../ui/input';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
-import { useTemplateStore } from './sows/templateStore';
+import { useTemplateStore, type TemplateRow } from './sows/templateStore';
 import { FormValuesDocument } from './sows/builder/FormValuesDocument';
 import { useSowStore } from './sows/sowStore';
+import { useProjectStore } from '../admin/projectStore';
+import { Dialog, DialogTrigger, DialogContent } from '../ui/dialog';
+import { Select, SelectTrigger, SelectContent, SelectItem } from '../ui/select';
+import { Label } from '../ui/label';
 import { type SowRow, type SowStatus as Status } from './sows/sowData';
 import { getVersionHistory } from './sows/sowVersionHistory';
 import { VersionHistoryDialog } from './sows/VersionHistoryDialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
+import { useParticipantSowStore } from '../participant/participantSowStore';
 
 const STATUS_LABEL: Record<Status, string> = {
   DRAFT: 'Draft',
   PUBLISHED: 'Published',
   APPROVED: 'Approved',
   CHANGES_REQUESTED: 'Changes requested',
+  IN_REVIEW: 'In Review',
 };
 
 const STATUS_TONE: Record<Status, 'neutral' | 'info' | 'warning' | 'danger' | 'success'> = {
@@ -31,6 +37,7 @@ const STATUS_TONE: Record<Status, 'neutral' | 'info' | 'warning' | 'danger' | 's
   PUBLISHED: 'success',
   APPROVED: 'success',
   CHANGES_REQUESTED: 'warning',
+  IN_REVIEW: 'info',
 };
 
 function requiresApproval(sow: SowRow): boolean {
@@ -45,8 +52,7 @@ function statusToneFor(sow: SowRow): 'neutral' | 'info' | 'warning' | 'danger' |
   return requiresApproval(sow) ? 'warning' : STATUS_TONE[sow.status];
 }
 
-const STATUS_FILTERS: { label: string; value: 'ALL' | Status }[] = [
-  { label: 'All', value: 'ALL' },
+const STATUS_FILTERS: { label: string; value: 'PUBLISHED' | 'DRAFT' }[] = [
   { label: 'Published', value: 'PUBLISHED' },
   { label: 'Draft', value: 'DRAFT' },
 ];
@@ -80,25 +86,24 @@ const COMMENTS_BY_SOW: Record<string, ReviewerComment[]> = {
 
 interface SowsPageProps {
   hideCreateButton?: boolean;
+  isParticipant?: boolean;
 }
 
-export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
+export function SowsPage({ hideCreateButton = false, isParticipant = false }: SowsPageProps = {}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
   const statusQuery = searchParams.get('status');
-  const statusFilter = (statusQuery as 'ALL' | Status) || 'ALL';
+  const statusFilter = (statusQuery as 'PUBLISHED' | 'DRAFT') || 'PUBLISHED';
 
-  const setStatusFilter = (val: 'ALL' | Status) => {
+  const setStatusFilter = (val: 'PUBLISHED' | 'DRAFT') => {
     const params = new URLSearchParams(searchParams.toString());
-    if (val === 'ALL') {
-      params.delete('status');
-    } else {
-      params.set('status', val);
-    }
+    params.set('status', val);
     router.push(`${pathname}?${params.toString()}`);
   };
+
+
 
   const [search, setSearch] = useState('');
   const sows = useSowStore((s) => s.sows);
@@ -106,9 +111,14 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
   const [selectedSowId, setSelectedSowId] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, ReviewerComment[]>>(COMMENTS_BY_SOW);
   const [commentDraft, setCommentDraft] = useState('');
-  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [selectedHistoryTemplateId, setSelectedHistoryTemplateId] = useState<string | null>(null);
+  const [useTemplateTarget, setUseTemplateTarget] = useState<TemplateRow | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const { width: sidebarWidth, startResize } = useResizableWidth(720, 360, 720);
   const templates = useTemplateStore((s) => s.templates);
+  const projects = useProjectStore((s) => s.projects);
+  const addSow = useSowStore((s) => s.addSow);
+  const addParticipantSow = useParticipantSowStore((s) => s.addSow);
 
   const selectedSow = sows.find((s) => s.id === selectedSowId) ?? null;
   const selectedTemplate = selectedSow ? templates.find((t) => t.id === selectedSow.templateId) : undefined;
@@ -155,19 +165,30 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
     setSowStatus(sowId, 'PUBLISHED');
   }
 
-  const visible = sows.filter(
-    (s) =>
-      (statusFilter === 'ALL' || s.status === statusFilter) &&
-      (s.sowNumber.toLowerCase().includes(search.toLowerCase()) ||
-        s.title.toLowerCase().includes(search.toLowerCase()) ||
-        s.project.toLowerCase().includes(search.toLowerCase())),
+  function handleUseTemplate() {
+    if (!useTemplateTarget || !selectedProjectId) return;
+    const project = projects.find(p => p.id === selectedProjectId);
+    if (!project) return;
+    const createSow = isParticipant ? addParticipantSow : addSow;
+    const newSow = createSow({
+      title: useTemplateTarget.name,
+      project: project.name,
+      description: useTemplateTarget.description || '',
+      templateId: useTemplateTarget.id,
+    });
+    setUseTemplateTarget(null);
+    router.push(`/tenantSlug/participant/sows/edit?id=${newSow.id}`);
+  }
+
+  const visibleTemplates = templates.filter(
+    (t) => isParticipant ? t.isActive : (statusFilter === 'PUBLISHED' ? t.isActive : !t.isActive)
   );
 
   return (
     <div className="flex flex-col gap-4 w-full">
       <PageHeader
-        title="SOWs & Templates"
-        description="Statements of Work and reusable templates."
+        title="Templates"
+        description="Reusable templates."
         actions={
           !hideCreateButton && (
             <Button onClick={() => router.push('/tenantSlug/admin/sows/new')}>
@@ -178,295 +199,34 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
         }
       />
 
-      <Tabs defaultValue="sows" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="sows">SOWs</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="sows" className="mt-0">
-          <div className="flex flex-col md:flex-row items-stretch md:items-start gap-4 md:gap-6">
-            <div className="min-w-0 flex-1">
-
+      <div className="w-full">
         <div className="mb-4 flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search SOWs..."
-              className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-0.5">
-            {STATUS_FILTERS.map((f) => (
-              <button
-                key={f.value}
-                type="button"
-                onClick={() => setStatusFilter(f.value)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  statusFilter === f.value
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          {!isParticipant && (
+            <div className="flex flex-wrap items-center gap-1 gap-y-1 rounded-lg border border-border bg-muted/40 p-0.5">
+              {STATUS_FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  onClick={() => setStatusFilter(f.value as 'PUBLISHED' | 'DRAFT')}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                    statusFilter === f.value
+                      ? 'bg-card text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
           <span className="text-sm text-muted-foreground">
-            {visible.length} SOW{visible.length !== 1 ? 's' : ''}
+            {visibleTemplates.length} Template{visibleTemplates.length !== 1 ? 's' : ''}
           </span>
         </div>
 
-        {visible.length === 0 ? (
-          <EmptyState message={search || statusFilter !== 'ALL' ? 'No SOWs match your filters' : 'No SOWs yet'} />
-        ) : (
-          <Table>
-            <TableHead>
-              <Th>SOW</Th>
-              <Th>Project</Th>
-              <Th>Status</Th>
-              <Th>Version</Th>
-              <Th>Updated</Th>
-              <Th><span className="sr-only">Actions</span></Th>
-            </TableHead>
-            <TableBody>
-              {visible.map((sow) => (
-                <tr
-                  key={sow.id}
-                  className={`group cursor-pointer transition-colors hover:bg-muted/40 ${
-                    selectedSow?.id === sow.id ? 'bg-muted/40' : ''
-                  }`}
-                  onClick={() => openSidebar(sow.id)}
-                >
-                  <Td>
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
-                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-foreground">{sow.sowNumber}</div>
-                        <div className="text-xs text-muted-foreground">{sow.title}</div>
-                      </div>
-                    </div>
-                  </Td>
-                  <Td>{sow.project}</Td>
-                  <Td>
-                    <Badge tone={statusToneFor(sow)}>{statusLabelFor(sow)}</Badge>
-                  </Td>
-                  <Td className="text-muted-foreground">v{sow.version}</Td>
-                  <Td className="text-muted-foreground">{sow.updatedAt}</Td>
-                  <Td className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" className="h-8 w-8 p-0" id={`sow-actions-${sow.id}`}>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {sow.status === 'DRAFT' && (
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handlePublishSow(sow.id); }}>
-                            Publish
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            editDocument(sow.id);
-                          }}
-                        >
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600 hover:text-red-700" onClick={(e) => { e.stopPropagation(); }}>
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </Td>
-                </tr>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
-
-      {/* Right sidebar: template doc — pushes content left, no overlay */}
-      <div
-        className="shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-in-out w-0 md:w-[var(--panel-w)] md:-mt-6 md:-mb-6 md:-mr-6"
-        style={{ ['--panel-w' as any]: selectedSow ? `${sidebarWidth}px` : '0px', opacity: selectedSow ? 1 : 0 }}
-      >
-        {selectedSow && (
-          <div
-            data-print-area
-            className="fixed inset-0 z-40 flex flex-col bg-background md:sticky md:top-14 md:inset-auto md:z-auto md:h-[calc(100vh-3.5rem)] md:w-[var(--panel-w)] md:border-l md:border-border md:bg-muted/40"
-            style={{ ['--panel-w' as any]: `${sidebarWidth}px` }}
-          >
-            <ResizeHandle onPointerDown={startResize} className="hidden md:block no-print" />
-            <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">{selectedSow.sowNumber}</h2>
-                <p className="text-sm text-muted-foreground">{selectedSow.title}</p>
-              </div>
-              <div className="flex items-center gap-1 no-print">
-                <Button variant="ghost" size="sm" onClick={() => setShowVersionHistory(true)}>
-                  <History className="h-4 w-4" />
-                  Version History
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => window.print()}>
-                  <Printer className="h-4 w-4" />
-                  Export to PDF
-                </Button>
-                <button
-                  type="button"
-                  onClick={closeSidebar}
-                  className="rounded-full p-2 hover:bg-muted transition-colors text-muted-foreground"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Version</h3>
-                  <p className="text-sm font-medium text-foreground">v{selectedSow.version}</p>
-                </div>
-                <div>
-                  <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Last Updated</h3>
-                  <p className="text-sm font-medium text-foreground">{selectedSow.updatedAt}</p>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-xs font-medium uppercase text-muted-foreground mb-1">Description</h3>
-                <p className="text-sm leading-relaxed text-foreground">{selectedSow.description}</p>
-              </div>
-
-              <div className="border-t border-border pt-6 no-print">
-                <h3 className="text-sm font-semibold text-foreground mb-4">Form Preview</h3>
-                {selectedTemplate ? (
-                  <FormValuesDocument schema={selectedTemplate.jsonSchema} formData={selectedSow.formData ?? {}} />
-                ) : (
-                  <EmptyState message="No template linked to this SOW" />
-                )}
-              </div>
-
-              <div className="hidden border-t border-border pt-6 print:block">
-                {selectedTemplate ? (
-                  <FormValuesDocument schema={selectedTemplate.jsonSchema} formData={selectedSow.formData ?? {}} />
-                ) : (
-                  <p className="text-sm text-muted-foreground">No template linked to this SOW</p>
-                )}
-              </div>
-
-              <div className="border-t border-border pt-6 no-print">
-                <h3 className="text-sm font-semibold text-foreground mb-4">Reviewer Comments</h3>
-                {(() => {
-                  const sowComments = comments[selectedSow.id] ?? [];
-                  if (sowComments.length === 0) {
-                    return (
-                      <div className="rounded-lg border border-dashed border-border p-6 text-center">
-                        <p className="text-sm font-medium text-foreground">No Comments Yet</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Reviewer feedback on this SOW will show up here.
-                        </p>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="space-y-3">
-                      {sowComments.map((comment, i) => (
-                        <div
-                          key={comment.id}
-                          className={
-                            i === 0
-                              ? 'rounded-lg border border-amber-200/50 bg-amber-50/50 p-3 dark:border-amber-900/50 dark:bg-amber-950/20'
-                              : 'rounded-lg border border-border bg-card p-3'
-                          }
-                        >
-                          <div className="flex items-center gap-2 mb-2">
-                            <div
-                              className={
-                                i === 0
-                                  ? 'h-6 w-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold dark:bg-amber-900 dark:text-amber-300'
-                                  : 'h-6 w-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold dark:bg-blue-900 dark:text-blue-300'
-                              }
-                            >
-                              {comment.initials}
-                            </div>
-                            <span className="text-sm font-medium">{comment.author}</span>
-                            <span className="text-xs text-muted-foreground ml-auto">{comment.postedAt}</span>
-                          </div>
-                          <p className="text-sm text-foreground">{comment.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-                <textarea
-                  placeholder="Reply to comments..."
-                  value={commentDraft}
-                  onChange={(e) => setCommentDraft(e.target.value)}
-                  className="mt-3 w-full rounded-md border border-border bg-card p-3 text-sm focus:border-primary focus:bg-background focus:outline-none min-h-25 resize-none"
-                />
-                <Button className="w-full mt-3" disabled={!commentDraft.trim()} onClick={handlePostReply}>
-                  Post Reply
-                </Button>
-              </div>
-            </div>
-
-            {requiresApproval(selectedSow) ? (
-              <div className="border-t border-border p-4 shrink-0 space-y-2 no-print">
-                {!commentDraft.trim() && (
-                  <p className="text-xs text-muted-foreground">
-                    Log a comment above before you can review, approve, or reject this SOW.
-                  </p>
-                )}
-                <div className="flex items-center justify-end gap-3">
-                  <Button variant="ghost" onClick={closeSidebar}>
-                    Close
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={!commentDraft.trim()}
-                    onClick={() => handleDecision(selectedSow.id, 'CHANGES_REQUESTED', 'Changes requested')}
-                  >
-                    Changes Requested
-                  </Button>
-                  <Button disabled={!commentDraft.trim()} onClick={() => handleDecision(selectedSow.id, 'APPROVED', 'Approved')}>
-                    Approved
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="border-t border-border p-4 flex items-center justify-end gap-3 shrink-0 no-print">
-                <Button variant="ghost" onClick={closeSidebar}>
-                  Close
-                </Button>
-                <Button onClick={() => editDocument(selectedSow.id)}>Edit Document</Button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-            {selectedSow && (
-              <VersionHistoryDialog
-                open={showVersionHistory}
-                onOpenChange={setShowVersionHistory}
-                sowNumber={selectedSow.sowNumber}
-                entries={getVersionHistory(selectedSow.id)}
-              />
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="templates" className="mt-0">
-          <div className="min-w-0 flex-1">
-            {templates.length === 0 ? (
-              <EmptyState message="No templates created yet" />
+        <div className="min-w-0 flex-1">
+            {visibleTemplates.length === 0 ? (
+              <EmptyState message={`No ${statusFilter.toLowerCase()} templates found`} />
             ) : (
               <Table>
                 <TableHead>
@@ -477,7 +237,7 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                   <Th><span className="sr-only">Actions</span></Th>
                 </TableHead>
                 <TableBody>
-                  {templates.map((t) => (
+                  {visibleTemplates.map((t) => (
                     <tr
                       key={t.id}
                       className="group cursor-pointer transition-colors hover:bg-muted/40"
@@ -499,16 +259,72 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                       </Td>
                       <Td className="text-muted-foreground">{t.createdAt}</Td>
                       <Td className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            router.push(`/tenantSlug/admin/sows/${t.id}/1`);
-                          }}
-                        >
-                          Edit
-                        </Button>
+                        {isParticipant ? (
+                          <Button 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setUseTemplateTarget(t);
+                              setSelectedProjectId(projects[0]?.id ?? '');
+                            }}
+                          >
+                            Use
+                          </Button>
+                        ) : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" className="h-8 w-8 p-0" id={`template-actions-${t.id}`}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  editDocument(t.id);
+                                }}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedHistoryTemplateId(t.id);
+                                }}
+                              >
+                                View Version History
+                              </DropdownMenuItem>
+                              {!t.isActive ? (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    useTemplateStore.getState().toggleActive(t.id);
+                                  }}
+                                >
+                                  Publish
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    useTemplateStore.getState().toggleActive(t.id);
+                                  }}
+                                >
+                                  Save as Draft
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                className="text-red-600 hover:text-red-700"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  useTemplateStore.getState().deleteTemplate(t.id);
+                                }}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </Td>
                     </tr>
                   ))}
@@ -516,8 +332,53 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
               </Table>
             )}
           </div>
-        </TabsContent>
-      </Tabs>
+      </div>
+
+      {selectedHistoryTemplateId && (
+        <VersionHistoryDialog
+          open={!!selectedHistoryTemplateId}
+          onOpenChange={(open) => {
+            if (!open) setSelectedHistoryTemplateId(null);
+          }}
+          sowNumber={templates.find((t) => t.id === selectedHistoryTemplateId)?.name ?? 'Template'}
+          entries={getVersionHistory(selectedHistoryTemplateId)}
+        />
+      )}
+
+      <Dialog open={!!useTemplateTarget} onOpenChange={(val) => !val && setUseTemplateTarget(null)}>
+        <DialogContent title="Use Template" className="max-w-md">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select a project to create a new Draft SOW using the <strong>{useTemplateTarget?.name}</strong> template.
+            </p>
+            {projects.length === 0 ? (
+              <EmptyState message="No projects available" />
+            ) : (
+              <div>
+                <Label>Select Project</Label>
+                <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                  <SelectTrigger />
+                  <SelectContent>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="ghost" onClick={() => setUseTemplateTarget(null)}>
+                Cancel
+              </Button>
+              <Button type="button" disabled={!selectedProjectId} onClick={handleUseTemplate}>
+                Create SOW
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

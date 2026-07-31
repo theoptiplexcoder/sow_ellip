@@ -103,7 +103,7 @@ export function Navbar({
             <DropdownMenuContent align="end" className="w-48">
               {roleLabel !== 'Organization Admin' && (
                 <>
-                  <DropdownMenuItem onClick={() => router.push(roleLabel === 'SOW Participant' ? `${basePath}/sows/yard` : `${basePath}/sows/new`)}>
+                  <DropdownMenuItem onClick={() => router.push(roleLabel === 'SOW Participant' ? `${basePath}/sows/templates` : `${basePath}/sows/new`)}>
                     <FileText className="mr-2 h-4 w-4" />
                     <span>Create SOW</span>
                   </DropdownMenuItem>

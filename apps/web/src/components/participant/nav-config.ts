@@ -17,10 +17,12 @@ export const PARTICIPANT_NAV_CONFIG: NavConfig = {
     { label: 'Projects', href: '/participant/projects', icon: FolderKanban },
     {
       label: 'SOWs',
-      href: '/participant/sows',
+      href: '/participant/sows/templates',
       icon: FileText,
       subItems: [
-        { label: 'All', href: '/participant/sows?status=ALL' },
+        { label: 'SOW Templates', href: '/participant/sows/templates' },
+        { label: 'All', href: '/participant/sows/my' },
+        { label: 'Draft', href: '/participant/sows?status=DRAFT' },
         { label: 'In review', href: '/participant/sows?status=IN_REVIEW' },
         { label: 'Changes requested', href: '/participant/sows?status=CHANGES_REQUESTED' },
         { label: 'Rejected', href: '/participant/sows?status=REJECTED' },

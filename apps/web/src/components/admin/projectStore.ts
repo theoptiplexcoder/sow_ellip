@@ -27,11 +27,39 @@ type ProjectStore = {
   updateProject: (id: string, patch: Partial<ProjectRow>) => void;
   addComment: (projectId: string, comment: RequirementComment) => void;
 };
+const MOCK_PROJECTS: ProjectRow[] = [
+  {
+    id: 'p-1',
+    name: 'Website Redesign',
+    clientId: 'c-1',
+    ownerId: 'u-1',
+    status: 'ACTIVE',
+    startDate: '2026-06-01',
+    endDate: '2026-10-31',
+  },
+  {
+    id: 'p-2',
+    name: 'Mobile App Development',
+    clientId: 'c-1',
+    ownerId: 'u-2',
+    status: 'ON_HOLD',
+    startDate: '2026-03-15',
+  },
+  {
+    id: 'p-3',
+    name: 'Cloud Migration',
+    clientId: 'c-2',
+    ownerId: 'u-3',
+    status: 'ACTIVE',
+    startDate: '2026-07-01',
+    endDate: '2026-12-15',
+  },
+];
 
 export const useProjectStore = create<ProjectStore>()(
   persist(
     (set) => ({
-      projects: [],
+      projects: MOCK_PROJECTS,
       comments: {},
       addProject: (project) => set((state) => ({ projects: [...state.projects, project] })),
       updateProject: (id, patch) =>
@@ -46,6 +74,6 @@ export const useProjectStore = create<ProjectStore>()(
           },
         })),
     }),
-    { name: 'project-store' }
+    { name: 'project-store-v2' }
   )
 );

@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { JSONContent } from '@tiptap/core';
 import { PageHeader } from '../ui/page-header';
 import { Button } from '../ui/button';
 import { EmptyState } from '../ui/table';
-import { TemplateBuilder } from '../admin/sows/builder/TemplateBuilder';
-import type { FieldDraft } from '../admin/sows/builder/fieldTypes';
-import { useTemplateStore, type SchemaOverride } from '../admin/sows/templateStore';
+import { DocumentEditor } from '../admin/sows/document/DocumentEditor';
+import { docToSchemaOverride, EMPTY_DOC } from '../admin/sows/document/docToSchema';
+import { useTemplateStore } from '../admin/sows/templateStore';
 import { useParticipantSowStore } from './participantSowStore';
 
 export function SowEditorPage({ sowId }: { sowId: string }) {
@@ -19,17 +20,21 @@ export function SowEditorPage({ sowId }: { sowId: string }) {
   const sow = sows.find((s) => s.id === sowId);
   const template = sow ? templates.find((t) => t.id === sow.templateId) : undefined;
 
-  const [fields, setFields] = useState<FieldDraft[]>(sow?.fields ?? template?.fields ?? []);
-  const [schemaOverride, setSchemaOverride] = useState<SchemaOverride | null>(sow?.schemaOverride ?? null);
-  const [formData, setFormData] = useState<Record<string, unknown>>(sow?.formData ?? template?.defaultValues ?? {});
+  const [body, setBody] = useState<JSONContent>(sow?.body ?? template?.body ?? EMPTY_DOC);
 
   function goToSows() {
-    router.push('/tenantSlug/participant/sows');
+    router.push('/tenantSlug/participant/sows/my');
   }
 
   function handleSave() {
     if (!sow) return;
-    saveNewVersion(sow.id, { fields, schemaOverride, formData });
+    const schemaOverride = docToSchemaOverride(body);
+    saveNewVersion(sow.id, {
+      fields: sow.fields ?? [],
+      schemaOverride,
+      formData: schemaOverride.defaultValues,
+      body,
+    });
     goToSows();
   }
 
@@ -60,15 +65,9 @@ export function SowEditorPage({ sowId }: { sowId: string }) {
       />
 
       {template ? (
-        <TemplateBuilder
-          fields={fields}
-          onFieldsChange={setFields}
-          schemaOverride={schemaOverride}
-          onSchemaOverrideChange={setSchemaOverride}
-          version={sow.version}
-          formData={formData}
-          onFormDataChange={setFormData}
-        />
+        <div className="mt-6">
+          <DocumentEditor content={body} onChange={setBody} />
+        </div>
       ) : (
         <EmptyState message="No template linked to this SOW" />
       )}

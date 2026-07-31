@@ -8,6 +8,7 @@ import { Badge } from '../ui/badge';
 import { Table, TableHead, TableBody, Th, Td, EmptyState } from '../ui/table';
 import { Input } from '../ui/input';
 import { ResizeHandle } from '../ui/resize-handle';
+import { PrintHeader } from '../ui/print-header';
 import { useResizableWidth } from '../../lib/useResizableWidth';
 import { useTemplateStore } from '../admin/sows/templateStore';
 import { LivePreview } from '../admin/sows/builder/LivePreview';
@@ -199,6 +200,7 @@ export function SowsYardPage() {
             data-print-area
             className="fixed inset-0 z-40 overflow-y-auto bg-background p-4 md:sticky md:top-14 md:inset-auto md:z-auto md:flex md:h-[calc(100vh-3.5rem)] md:w-[var(--panel-w)] md:flex-col md:border-l md:border-border md:bg-muted/40 md:p-0"
           >
+            <PrintHeader />
             <ResizeHandle onPointerDown={startResize} className="hidden md:block no-print" />
             <div className="flex items-center justify-between border-b border-border p-4 shrink-0">
               <div>

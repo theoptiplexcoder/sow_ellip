@@ -9,6 +9,7 @@ import {
   draftsToDefaultValues,
   type FieldDraft,
 } from './builder/fieldTypes';
+import { diffSchemaValues, recordVersion } from './sowVersionHistory';
 
 export type TemplateRow = {
   id: string;
@@ -61,6 +62,11 @@ function computeSchema(
     };
   }
   return fromFields(input.fields);
+}
+
+/** Tiptap doc equality: two documents are the same version iff their content trees match. */
+function isSameDoc(a: JSONContent | undefined, b: JSONContent | undefined): boolean {
+  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 }
 
 type SeedTemplate = Pick<
@@ -143,6 +149,9 @@ export const useTemplateStore = create<TemplateStore>()(
         let saved: TemplateRow;
         set((state) => {
           if (input.id) {
+            const existing = state.templates.find((t) => t.id === input.id);
+            const contentChanged = !existing || !isSameDoc(existing.body, input.body);
+            const nextVersion = existing && contentChanged ? existing.version + 1 : (existing?.version ?? 1);
             const templates = state.templates.map((t) =>
               t.id === input.id
                 ? {
@@ -152,12 +161,20 @@ export const useTemplateStore = create<TemplateStore>()(
                     fields: input.fields,
                     body: input.body,
                     isActive: input.isActive,
-                    version: t.version + 1,
+                    version: nextVersion,
                     ...computed,
                   }
                 : t,
             );
             saved = templates.find((t) => t.id === input.id)!;
+            if (existing && contentChanged) {
+              recordVersion(saved.id, {
+                version: nextVersion,
+                updatedAt: new Date().toISOString().slice(0, 10),
+                updatedBy: 'Admin',
+                changes: diffSchemaValues(existing.jsonSchema, existing.defaultValues, computed.jsonSchema, computed.defaultValues),
+              });
+            }
             return { templates };
           }
           const row: TemplateRow = {
@@ -172,6 +189,12 @@ export const useTemplateStore = create<TemplateStore>()(
             ...computed,
           };
           saved = row;
+          recordVersion(row.id, {
+            version: 1,
+            updatedAt: row.createdAt,
+            updatedBy: 'Admin',
+            changes: [],
+          });
           return { templates: [...state.templates, row] };
         });
         return saved!;

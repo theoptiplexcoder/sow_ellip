@@ -1,3 +1,4 @@
+import type { RJSFSchema } from '@rjsf/utils';
 import type { FieldDraft } from './builder/fieldTypes';
 
 export type SowFieldChange = {
@@ -72,5 +73,29 @@ export function diffFormData(
   }
 
   walk(fields, oldData ?? {}, newData ?? {});
+  return changes;
+}
+
+/** Diffs the schema-derived values of a document-based template (tiptap body) between two saves. */
+export function diffSchemaValues(
+  oldSchema: RJSFSchema,
+  oldValues: Record<string, unknown>,
+  newSchema: RJSFSchema,
+  newValues: Record<string, unknown>,
+): SowFieldChange[] {
+  const changes: SowFieldChange[] = [];
+  const oldProps = (oldSchema.properties ?? {}) as Record<string, RJSFSchema>;
+  const newProps = (newSchema.properties ?? {}) as Record<string, RJSFSchema>;
+  const keys = new Set([...Object.keys(oldProps), ...Object.keys(newProps)]);
+
+  for (const key of keys) {
+    const oldValue = formatFieldValue(oldValues?.[key]);
+    const newValue = formatFieldValue(newValues?.[key]);
+    if (oldValue !== newValue) {
+      const title = (newProps[key]?.title as string | undefined) ?? (oldProps[key]?.title as string | undefined) ?? key;
+      changes.push({ fieldLabel: title, oldValue, newValue });
+    }
+  }
+
   return changes;
 }

@@ -16,6 +16,7 @@ import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
 
 import { useProjectStore, type ProjectRow, type Status, type RequirementComment } from './projectStore';
+import { useTeamStore } from './teamStore';
 
 const CLIENTS = [
   { id: 'c-1', name: 'Northwind Traders' },
@@ -23,10 +24,6 @@ const CLIENTS = [
   { id: 'c-3', name: 'Initech' },
 ];
 
-const OWNERS = [
-  { id: 'u-1', name: 'Priya Nair' },
-  { id: 'u-2', name: 'Sam Okafor' },
-];
 
 const STATUS_TONE: Record<Status, 'success' | 'warning' | 'neutral' | 'danger'> = {
   ACTIVE: 'success',
@@ -95,17 +92,15 @@ const SOWS_BY_PROJECT: Record<string, SowRow[]> = {
 
 
 
-const emptyForm = { name: '', clientId: CLIENTS[0].id, ownerId: OWNERS[0].id, status: 'ACTIVE' as Status, startDate: '', endDate: '' };
+const emptyForm = { name: '', clientId: CLIENTS[0].id, ownerId: '', status: 'ACTIVE' as Status, startDate: '', endDate: '' };
 
 function clientName(id: string) {
   return CLIENTS.find((c) => c.id === id)?.name ?? 'Unknown';
 }
-function ownerName(id: string) {
-  return OWNERS.find((o) => o.id === id)?.name ?? 'Unknown';
-}
 
 export function ProjectsPage() {
   const { projects, comments, addProject, updateProject, addComment: addCommentToStore } = useProjectStore();
+  const members = useTeamStore((s) => s.members);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ProjectRow | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -131,12 +126,12 @@ export function ProjectsPage() {
       (statusFilter === 'ALL' || p.status === statusFilter) &&
       (p.name.toLowerCase().includes(search.toLowerCase()) ||
         clientName(p.clientId).toLowerCase().includes(search.toLowerCase()) ||
-        ownerName(p.ownerId).toLowerCase().includes(search.toLowerCase())),
+        (members.find(m => m.id === p.ownerId)?.name ?? 'Unknown').toLowerCase().includes(search.toLowerCase())),
   );
 
   function openCreate() {
     setEditing(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, ownerId: members[0]?.id ?? '' });
     setOpen(true);
   }
 
@@ -215,11 +210,11 @@ export function ProjectsPage() {
                     </Select>
                   </div>
                   <div>
-                    <Label>Owner</Label>
+                    <Label>Assignee</Label>
                     <Select value={form.ownerId} onValueChange={(v) => setForm({ ...form, ownerId: v })}>
                       <SelectTrigger className="w-full" />
                       <SelectContent>
-                        {OWNERS.map((o) => (
+                        {members.map((o) => (
                           <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -307,7 +302,7 @@ export function ProjectsPage() {
           <TableHead>
             <Th>Project</Th>
             <Th>Client</Th>
-            <Th>Owner</Th>
+            <Th>Assignee</Th>
             <Th>Status</Th>
             <Th>Timeline</Th>
             <Th className="w-10">&nbsp;</Th>
@@ -328,7 +323,7 @@ export function ProjectsPage() {
                   </div>
                 </Td>
                 <Td>{clientName(project.clientId)}</Td>
-                <Td>{ownerName(project.ownerId)}</Td>
+                <Td>{members.find(m => m.id === project.ownerId)?.name ?? 'Unknown'}</Td>
                 <Td>
                   <Badge tone={STATUS_TONE[project.status]}>{STATUS_LABEL[project.status]}</Badge>
                 </Td>

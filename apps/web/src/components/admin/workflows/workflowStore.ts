@@ -22,138 +22,7 @@ export type WorkflowRow = {
   sows: SowLink[];
 };
 
-const SEED_WORKFLOWS: WorkflowRow[] = [
-  {
-    id: 'w-1',
-    name: 'Standard 2-step',
-    description: 'Manager review, then finance sign-off.',
-    status: 'PUBLISHED',
-    steps: [
-      {
-        label: 'Manager review',
-        approverIds: ['u-3'],
-        matchType: 'AND',
-        role: 'APPROVER',
-      },
-      {
-        label: 'Finance sign-off',
-        approverIds: ['u-4'],
-        matchType: 'AND',
-        role: 'VIEWER',
-      },
-    ],
-    sows: [
-      {
-        id: 's-1',
-        sowNumber: 'SOW-1042',
-        title: 'Website revamp — Phase 1',
-        currentStep: 2,
-      },
-      {
-        id: 's-4',
-        sowNumber: 'SOW-1048',
-        title: 'Phase 2 scope addendum',
-        currentStep: 0,
-      },
-    ],
-  },
-  {
-    id: 'w-2',
-    name: 'Single approver',
-    status: 'DRAFT',
-    steps: [
-      {
-        label: 'Director approval',
-        approverIds: ['u-3'],
-        matchType: 'AND',
-        role: 'APPROVER',
-      },
-    ],
-    sows: [
-      {
-        id: 's-3',
-        sowNumber: 'SOW-1055',
-        title: 'Support retainer renewal',
-        currentStep: 0,
-      },
-    ],
-  },
-  {
-    id: 'w-3',
-    name: 'Joint sign-off (AND)',
-    description: 'Both Dana and Jordan must approve before it moves forward.',
-    status: 'PUBLISHED',
-    steps: [
-      {
-        label: 'Joint review',
-        approverIds: ['u-3', 'u-4'],
-        matchType: 'AND',
-        role: 'APPROVER',
-      },
-    ],
-    sows: [
-      {
-        id: 's-5',
-        sowNumber: 'SOW-1060',
-        title: 'Joint sign-off demo',
-        currentStep: 1,
-      },
-    ],
-  },
-  {
-    id: 'w-4',
-    name: 'Either approver (OR)',
-    description:
-      'Either Dana or Jordan can approve — whichever is available first.',
-    status: 'PUBLISHED',
-    steps: [
-      {
-        label: 'Backup review',
-        approverIds: ['u-3', 'u-4'],
-        matchType: 'OR',
-        role: 'APPROVER',
-        approvedBy: ['u-4'],
-      },
-    ],
-    sows: [
-      {
-        id: 's-6',
-        sowNumber: 'SOW-1061',
-        title: 'Either approver demo',
-        currentStep: 1,
-      },
-    ],
-  },
-  {
-    id: 'w-5',
-    name: 'Mixed conditions (AND + OR)',
-    description: 'Joint review requires both, final sign-off accepts either.',
-    status: 'PUBLISHED',
-    steps: [
-      {
-        label: 'Joint review',
-        approverIds: ['u-3', 'u-4'],
-        matchType: 'AND',
-        role: 'APPROVER',
-      },
-      {
-        label: 'Final sign-off',
-        approverIds: ['u-3', 'u-4'],
-        matchType: 'OR',
-        role: 'APPROVER',
-        approvedBy: ['u-3'],
-      },
-    ],
-    sows: [
-      {
-        id: 's-7',
-        sowNumber: 'SOW-1062',
-        title: 'Mixed conditions demo',
-        currentStep: 2,
-      },
-    ],
-  },
-];
+const SEED_WORKFLOWS: WorkflowRow[] = [];
 
 export type WorkflowInput = {
   name: string;
@@ -227,6 +96,6 @@ export const useWorkflowStore = create<WorkflowStore>()(
         }));
       },
     }),
-    { name: 'sow-workflow-store' },
+    { name: 'sow-workflow-store-v2' },
   ),
 );

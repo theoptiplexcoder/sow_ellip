@@ -1,7 +1,7 @@
 import type { FieldDraft } from './builder/fieldTypes';
 import type { SchemaOverride } from './templateStore';
 
-export type SowStatus = 'DRAFT' | 'PUBLISHED' | 'APPROVED' | 'CHANGES_REQUESTED';
+export type SowStatus = 'DRAFT' | 'PUBLISHED' | 'APPROVED' | 'CHANGES_REQUESTED' | 'IN_REVIEW';
 
 export type SowRow = {
   id: string;
