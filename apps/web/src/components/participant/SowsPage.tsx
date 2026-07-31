@@ -15,6 +15,8 @@ import { useTemplateStore } from '../admin/sows/templateStore';
 import { FormValuesDocument } from '../admin/sows/builder/FormValuesDocument';
 import { useParticipantSowStore } from './participantSowStore';
 import { type SowRow, type SowStatus as Status } from './participantSowData';
+import { getVersionHistory } from '../admin/sows/sowVersionHistory';
+import { VersionHistoryDialog } from '../admin/sows/VersionHistoryDialog';
 
 const STATUS_LABEL: Record<Status, string> = {
   DRAFT: 'Draft',
@@ -127,6 +129,7 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
   const [comments, setComments] = useState<Record<string, ReviewerComment[]>>(COMMENTS_BY_SOW);
   const [commentDraft, setCommentDraft] = useState('');
   const [commentFieldTag, setCommentFieldTag] = useState('');
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const { width: sidebarWidth, startResize } = useResizableWidth(720, 360, 720);
   const templates = useTemplateStore((s) => s.templates);
 
@@ -335,7 +338,7 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
                 <p className="text-sm text-muted-foreground">{selectedSow.title}</p>
               </div>
               <div className="flex items-center gap-1 no-print">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => setShowVersionHistory(true)}>
                   <History className="h-4 w-4" />
                   Version History
                 </Button>
@@ -513,6 +516,15 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
           </div>
         )}
       </div>
+
+      {selectedSow && (
+        <VersionHistoryDialog
+          open={showVersionHistory}
+          onOpenChange={setShowVersionHistory}
+          sowNumber={selectedSow.sowNumber}
+          entries={getVersionHistory(selectedSow.id)}
+        />
+      )}
     </div>
   );
 }
