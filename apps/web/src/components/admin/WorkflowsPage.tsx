@@ -20,6 +20,7 @@ import { STEP_ROLES, matchTypeForApproverCount, type MatchType, type Step, type 
 import { useWorkflowStore, type WorkflowRow, type WorkflowStatus as Status } from './workflows/workflowStore';
 import { useTeamStore } from './teamStore';
 import { useParticipantSowStore } from '../participant/participantSowStore';
+import { useSowStore } from './sows/sowStore';
 
 
 
@@ -35,6 +36,7 @@ export function WorkflowsPage({ readOnly = false }: WorkflowsPageProps = {}) {
   const publishWorkflowInStore = useWorkflowStore((s) => s.publishWorkflow);
   const attachSowToWorkflowStore = useWorkflowStore((s) => s.attachSow);
   const participantSows = useParticipantSowStore((s) => s.sows);
+  const adminSows = useSowStore((s) => s.sows);
   const setParticipantSowStatus = useParticipantSowStore((s) => s.setStatus);
   const draftSows = participantSows.filter(s => s.status === 'DRAFT');
   const members = useTeamStore((s) => s.members);
