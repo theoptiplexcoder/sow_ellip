@@ -12,6 +12,7 @@ export const PARTICIPANT_NAV_CONFIG: NavConfig = {
   label: 'SOW Participant',
   nav: [
     { label: 'Dashboard', href: '/participant', icon: LayoutDashboard },
+    { label: 'Team', href: '/participant/team', icon: Users },
     { label: 'Clients', href: '/participant/clients', icon: Users },
     { label: 'Projects', href: '/participant/projects', icon: FolderKanban },
     {

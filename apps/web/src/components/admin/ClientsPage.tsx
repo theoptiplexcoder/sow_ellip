@@ -48,23 +48,7 @@ const PROJECTS_BY_CLIENT: Record<string, ClientProjectRow[]> = {
   'c-3': [],
 };
 
-type ClientRow = {
-  id: string;
-  name: string;
-  companyName: string;
-  primaryContact?: string;
-  email?: string;
-  phone?: string;
-  projectsCount: number;
-  archived: boolean;
-  createdAt: string;
-};
-
-const INITIAL_CLIENTS: ClientRow[] = [
-  { id: 'c-1', name: 'Northwind Traders', companyName: 'Northwind Traders Inc.', primaryContact: 'Ravi Shah', email: 'ravi@northwind.com', phone: '+1 555-0110', projectsCount: 3, archived: false, createdAt: '2026-01-15' },
-  { id: 'c-2', name: 'Globex', companyName: 'Globex Corporation', primaryContact: 'Maria Gomez', email: 'maria@globex.com', phone: '+1 555-0142', projectsCount: 1, archived: false, createdAt: '2026-02-20' },
-  { id: 'c-3', name: 'Initech', companyName: 'Initech LLC', primaryContact: 'Bill Lumbergh', email: 'bill@initech.com', projectsCount: 0, archived: false, createdAt: '2026-03-11' },
-];
+import { useClientStore, type ClientRow } from './clientStore';
 
 const emptyForm = { name: '', companyName: '', primaryContact: '', email: '', phone: '' };
 
@@ -86,7 +70,7 @@ function avatarColor(id: string) {
 }
 
 export function ClientsPage() {
-  const [clients, setClients] = useState<ClientRow[]>(INITIAL_CLIENTS);
+  const { clients, addClient, updateClient, archiveClient } = useClientStore();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ClientRow | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -136,18 +120,15 @@ export function ClientsPage() {
     e.preventDefault();
     if (!form.name.trim() || !form.companyName.trim()) return;
     if (editing) {
-      setClients((prev) => prev.map((c) => (c.id === editing.id ? { ...c, ...form } : c)));
+      updateClient(editing.id, form);
     } else {
-      setClients((prev) => [
-        ...prev,
-        {
-          id: `c-${prev.length + 1}`,
-          ...form,
-          projectsCount: 0,
-          archived: false,
-          createdAt: new Date().toISOString().slice(0, 10),
-        },
-      ]);
+      addClient({
+        id: `c-${Date.now()}`,
+        ...form,
+        projectsCount: 0,
+        archived: false,
+        createdAt: new Date().toISOString().slice(0, 10),
+      });
     }
     setOpen(false);
   }
@@ -157,7 +138,7 @@ export function ClientsPage() {
       setBlockedId(client.id);
       return;
     }
-    setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, archived: true } : c)));
+    archiveClient(client.id);
   }
 
   return (

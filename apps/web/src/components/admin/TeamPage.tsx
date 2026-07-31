@@ -13,24 +13,9 @@ import { Input } from '../ui/input';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
 
-type Member = {
-  id: string;
-  employeeId: string;
-  name: string;
-  email: string;
-  designation: string;
-  createdAt: string;
-};
+import { useTeamStore, type Member } from './teamStore';
 
 const CURRENT_USER_ID = 'u-1';
-
-const INITIAL_MEMBERS: Member[] = [
-  { id: 'u-1', employeeId: 'EMP-001', name: 'Priya Nair', email: 'priya@acme.com', designation: 'Admin', createdAt: '2026-01-12' },
-  { id: 'u-2', employeeId: 'EMP-002', name: 'Sam Okafor', email: 'sam@acme.com', designation: 'Software Engineer', createdAt: '2026-02-03' },
-  { id: 'u-3', employeeId: 'EMP-003', name: 'Dana Wu', email: 'dana@acme.com', designation: 'Product Manager', createdAt: '2026-02-18' },
-  { id: 'u-4', employeeId: 'EMP-004', name: 'Jordan Lee', email: 'jordan@acme.com', designation: 'Designer', createdAt: '2026-03-05' },
-  { id: 'u-5', employeeId: 'EMP-005', name: 'Alex Chen', email: 'alex@acme.com', designation: 'DevOps Engineer', createdAt: '2026-04-22' },
-];
 
 function getInitials(name: string) {
   return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
@@ -63,7 +48,7 @@ const SUCCESSFUL_PROJECTS_BY_MEMBER: Record<string, SuccessfulProject[]> = {
 };
 
 export function TeamPage() {
-  const [members, setMembers] = useState<Member[]>(INITIAL_MEMBERS);
+  const { members, addMember, removeMember: removeMemberFromStore } = useTeamStore();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [deleting, setDeleting] = useState<Member | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -84,24 +69,22 @@ export function TeamPage() {
     if (!inviteEmail.trim()) return;
     const nextNum = members.length + 1;
     const empId = `EMP-${nextNum < 10 ? '00' : nextNum < 100 ? '0' : ''}${nextNum}`;
-    setMembers((prev) => [
-      ...prev,
-      {
-        id: `u-${prev.length + 1}`,
-        employeeId: empId,
-        name: inviteEmail.split('@')[0],
-        email: inviteEmail.trim(),
-        designation: inviteDesignation.trim() || 'Employee',
-        createdAt: new Date().toISOString().slice(0, 10),
-      },
-    ]);
+    const newMember: Member = {
+      id: `u-${Date.now()}`,
+      employeeId: empId,
+      name: inviteEmail.split('@')[0],
+      email: inviteEmail.trim(),
+      designation: inviteDesignation.trim() || 'Employee',
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    addMember(newMember);
     setInviteEmail('');
     setInviteDesignation('');
     setInviteOpen(false);
   }
 
   function removeMember(id: string) {
-    setMembers((prev) => prev.filter((m) => m.id !== id));
+    removeMemberFromStore(id);
     setDeleting(null);
   }
 

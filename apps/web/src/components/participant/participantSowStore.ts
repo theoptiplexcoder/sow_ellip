@@ -57,6 +57,6 @@ export const useParticipantSowStore = create<ParticipantSowStore>()(
         }));
       },
     }),
-    { name: 'sow-participant-sow-store' },
+    { name: 'sow-participant-sow-store-v2' },
   ),
 );

@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { saveTemplatesToFile } from '../../../actions/saveTemplateAction';
+import { SAVED_TEMPLATES } from './savedTemplates';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
+import type { JSONContent } from '@tiptap/core';
 import {
   buildObjectSchema,
   draftsToDefaultValues,
@@ -15,6 +18,8 @@ export type TemplateRow = {
   createdAt: string;
   version: number;
   fields: FieldDraft[];
+  /** The typed document this template's schema was generated from. */
+  body?: JSONContent;
   jsonSchema: RJSFSchema;
   uiSchema: UiSchema;
   defaultValues: Record<string, unknown>;
@@ -31,6 +36,7 @@ export type TemplateInput = {
   name: string;
   description?: string;
   fields: FieldDraft[];
+  body?: JSONContent;
   isActive: boolean;
   schemaOverride?: SchemaOverride | null;
 };
@@ -71,48 +77,22 @@ const SEED_INPUT: SeedTemplate[] = [
     createdAt: '2026-01-10',
     fields: [
       {
-        key: 'projectTitle',
-        kind: 'text',
-        title: 'Project Title',
-        description: 'The title of the project.',
-        required: true,
-        readOnly: false,
-        hidden: false,
-        disabled: false,
-        width: '100',
-      },
-      {
-        key: 'projectDescription',
-        kind: 'textarea',
-        title: 'Project Description',
-        description: 'Detailed description of the project.',
-        required: true,
-        readOnly: false,
-        hidden: false,
-        disabled: false,
-        width: '100',
-      },
-      {
         key: 'overview',
-        kind: 'textarea',
+        kind: 'longText',
         title: 'Overview',
         description: 'Summarize the engagement.',
         required: true,
         readOnly: false,
         hidden: false,
-        disabled: false,
-        width: '100',
         default: 'This SOW outlines...',
       },
       {
         key: 'budget',
-        kind: 'currency',
+        kind: 'number',
         title: 'Budget (USD)',
         required: false,
         readOnly: false,
         hidden: false,
-        disabled: false,
-        width: '50',
       },
     ],
   },
@@ -134,7 +114,7 @@ const SEED_INPUT: SeedTemplate[] = [
   },
 ];
 
-const SEED_TEMPLATES: TemplateRow[] = SEED_INPUT.map((t) => ({
+const SEED_TEMPLATES: TemplateRow[] = SAVED_TEMPLATES.length > 0 ? SAVED_TEMPLATES : SEED_INPUT.map((t) => ({
   ...t,
   version: 1,
   ...fromFields(t.fields),
@@ -170,6 +150,7 @@ export const useTemplateStore = create<TemplateStore>()(
                     name: input.name,
                     description: input.description,
                     fields: input.fields,
+                    body: input.body,
                     isActive: input.isActive,
                     version: t.version + 1,
                     ...computed,
@@ -187,6 +168,7 @@ export const useTemplateStore = create<TemplateStore>()(
             createdAt: new Date().toISOString().slice(0, 10),
             version: 1,
             fields: input.fields,
+            body: input.body,
             ...computed,
           };
           saved = row;
@@ -243,10 +225,17 @@ export const useTemplateStore = create<TemplateStore>()(
         });
       },
     }),
-    { name: 'sow-template-store' },
+    { name: 'sow-template-store-v2' },
   ),
 );
 
 export function getTemplateById(id: string): TemplateRow | undefined {
   return useTemplateStore.getState().templates.find((t) => t.id === id);
 }
+
+// Subscribe to state changes and persist to the file via Server Action
+useTemplateStore.subscribe((state, prevState) => {
+  if (state.templates !== prevState.templates) {
+    saveTemplatesToFile(state.templates).catch(console.error);
+  }
+});

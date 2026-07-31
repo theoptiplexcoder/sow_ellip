@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { SowsPage } from '../../../../../components/participant/SowsPage';
+import { SowsPage } from '../../../../../components/admin/SowsPage';
 
 export default function Page() {
   return (

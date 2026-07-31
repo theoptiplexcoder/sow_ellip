@@ -15,17 +15,7 @@ import { Input, Textarea } from '../ui/input';
 import { ResizeHandle } from '../ui/resize-handle';
 import { useResizableWidth } from '../../lib/useResizableWidth';
 
-type Status = 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
-
-type ProjectRow = {
-  id: string;
-  name: string;
-  clientId: string;
-  ownerId: string;
-  status: Status;
-  startDate?: string;
-  endDate?: string;
-};
+import { useProjectStore, type ProjectRow, type Status, type RequirementComment } from './projectStore';
 
 const CLIENTS = [
   { id: 'c-1', name: 'Northwind Traders' },
@@ -60,11 +50,6 @@ const STATUS_FILTERS: { label: string; value: 'ALL' | Status }[] = [
   { label: 'Cancelled', value: 'CANCELLED' },
 ];
 
-const INITIAL_PROJECTS: ProjectRow[] = [
-  { id: 'p-1', name: 'Website revamp', clientId: 'c-1', ownerId: 'u-1', status: 'ACTIVE', startDate: '2026-02-01', endDate: '2026-06-30' },
-  { id: 'p-2', name: 'Data migration', clientId: 'c-1', ownerId: 'u-2', status: 'ON_HOLD', startDate: '2026-03-10' },
-  { id: 'p-3', name: 'Support retainer', clientId: 'c-2', ownerId: 'u-1', status: 'ACTIVE', startDate: '2026-01-05' },
-];
 
 type SowStatus = 'DRAFT' | 'SUBMITTED' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'REJECTED' | 'APPROVED';
 
@@ -108,33 +93,7 @@ const SOWS_BY_PROJECT: Record<string, SowRow[]> = {
   ],
 };
 
-type RequirementComment = { id: string; author: string; text: string; createdAt: string };
 
-const COMMENTS_BY_PROJECT: Record<string, RequirementComment[]> = {
-  'p-1': [
-    {
-      id: 'rc-1',
-      author: 'Ravi Shah',
-      text: 'We now also need the homepage to support a multi-language toggle (EN/ES).',
-      createdAt: '2026-07-22',
-    },
-    {
-      id: 'rc-2',
-      author: 'Ravi Shah',
-      text: 'Can we push the checkout redesign to Phase 2? Budget got trimmed this quarter.',
-      createdAt: '2026-07-26',
-    },
-  ],
-  'p-2': [
-    {
-      id: 'rc-3',
-      author: 'Ravi Shah',
-      text: 'Legacy records older than 2022 can be archived instead of migrated — reduces scope.',
-      createdAt: '2026-07-24',
-    },
-  ],
-  'p-3': [],
-};
 
 const emptyForm = { name: '', clientId: CLIENTS[0].id, ownerId: OWNERS[0].id, status: 'ACTIVE' as Status, startDate: '', endDate: '' };
 
@@ -146,7 +105,7 @@ function ownerName(id: string) {
 }
 
 export function ProjectsPage() {
-  const [projects, setProjects] = useState<ProjectRow[]>(INITIAL_PROJECTS);
+  const { projects, comments, addProject, updateProject, addComment: addCommentToStore } = useProjectStore();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ProjectRow | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -154,7 +113,6 @@ export function ProjectsPage() {
   const [search, setSearch] = useState('');
   const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null);
   const { width: sidebarWidth, startResize } = useResizableWidth(640, 280, 640);
-  const [comments, setComments] = useState<Record<string, RequirementComment[]>>(COMMENTS_BY_PROJECT);
   const [newComment, setNewComment] = useState('');
   const router = useRouter();
   const pathname = usePathname();
@@ -199,9 +157,9 @@ export function ProjectsPage() {
     e.preventDefault();
     if (!form.name.trim()) return;
     if (editing) {
-      setProjects((prev) => prev.map((p) => (p.id === editing.id ? { ...p, ...form } : p)));
+      updateProject(editing.id, form);
     } else {
-      setProjects((prev) => [...prev, { id: `p-${prev.length + 1}`, ...form }]);
+      addProject({ id: `p-${Date.now()}`, ...form });
     }
     setOpen(false);
   }
@@ -215,7 +173,7 @@ export function ProjectsPage() {
       text,
       createdAt: new Date().toISOString().slice(0, 10),
     };
-    setComments((prev) => ({ ...prev, [projectId]: [...(prev[projectId] ?? []), comment] }));
+    addCommentToStore(projectId, comment);
     setNewComment('');
   }
 

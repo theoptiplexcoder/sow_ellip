@@ -17,6 +17,7 @@ import { useSowStore } from './sows/sowStore';
 import { type SowRow, type SowStatus as Status } from './sows/sowData';
 import { getVersionHistory } from './sows/sowVersionHistory';
 import { VersionHistoryDialog } from './sows/VersionHistoryDialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 
 const STATUS_LABEL: Record<Status, string> = {
   DRAFT: 'Draft',
@@ -163,20 +164,29 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
   );
 
   return (
-    <div className="flex flex-col md:flex-row items-stretch md:items-start gap-4 md:gap-6">
-      <div className="min-w-0 flex-1">
-        <PageHeader
-          title="SOWs"
-          description="Statements of Work across your organization's projects."
-          actions={
-            !hideCreateButton && (
-              <Button onClick={() => router.push('/tenantSlug/admin/sows/new')}>
-                <Plus className="h-4 w-4" />
-                New SOW Template
-              </Button>
-            )
-          }
-        />
+    <div className="flex flex-col gap-4 w-full">
+      <PageHeader
+        title="SOWs & Templates"
+        description="Statements of Work and reusable templates."
+        actions={
+          !hideCreateButton && (
+            <Button onClick={() => router.push('/tenantSlug/admin/sows/new')}>
+              <Plus className="h-4 w-4" />
+              New SOW Template
+            </Button>
+          )
+        }
+      />
+
+      <Tabs defaultValue="sows" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="sows">SOWs</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="sows" className="mt-0">
+          <div className="flex flex-col md:flex-row items-stretch md:items-start gap-4 md:gap-6">
+            <div className="min-w-0 flex-1">
 
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 max-w-sm">
@@ -442,14 +452,72 @@ export function SowsPage({ hideCreateButton = false }: SowsPageProps = {}) {
         )}
       </div>
 
-      {selectedSow && (
-        <VersionHistoryDialog
-          open={showVersionHistory}
-          onOpenChange={setShowVersionHistory}
-          sowNumber={selectedSow.sowNumber}
-          entries={getVersionHistory(selectedSow.id)}
-        />
-      )}
+            {selectedSow && (
+              <VersionHistoryDialog
+                open={showVersionHistory}
+                onOpenChange={setShowVersionHistory}
+                sowNumber={selectedSow.sowNumber}
+                entries={getVersionHistory(selectedSow.id)}
+              />
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="templates" className="mt-0">
+          <div className="min-w-0 flex-1">
+            {templates.length === 0 ? (
+              <EmptyState message="No templates created yet" />
+            ) : (
+              <Table>
+                <TableHead>
+                  <Th>Template Name</Th>
+                  <Th>Version</Th>
+                  <Th>Status</Th>
+                  <Th>Updated</Th>
+                  <Th><span className="sr-only">Actions</span></Th>
+                </TableHead>
+                <TableBody>
+                  {templates.map((t) => (
+                    <tr
+                      key={t.id}
+                      className="group cursor-pointer transition-colors hover:bg-muted/40"
+                    >
+                      <Td>
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
+                            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-foreground">{t.name}</div>
+                            {t.description && <div className="text-xs text-muted-foreground">{t.description}</div>}
+                          </div>
+                        </div>
+                      </Td>
+                      <Td className="text-muted-foreground">v{t.version}</Td>
+                      <Td>
+                        <Badge tone={t.isActive ? 'success' : 'neutral'}>{t.isActive ? 'Active' : 'Draft'}</Badge>
+                      </Td>
+                      <Td className="text-muted-foreground">{t.createdAt}</Td>
+                      <Td className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            router.push(`/tenantSlug/admin/sows/${t.id}/1`);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </Td>
+                    </tr>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

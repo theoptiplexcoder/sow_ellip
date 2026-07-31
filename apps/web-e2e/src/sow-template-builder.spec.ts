@@ -1,47 +1,48 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SOW template builder', () => {
-  test('adds a field from the palette and configures it in the property panel', async ({ page }) => {
+test.describe('SOW template document editor', () => {
+  test('types a heading and body text into the document', async ({ page }) => {
     await page.goto('/tenantSlug/admin/sows/new');
 
-    await page.getByRole('button', { name: 'Number', exact: true }).click();
+    const doc = page.locator('[contenteditable="true"]');
+    await doc.click();
+    await page.keyboard.type('Scope of Work');
 
-    // The canvas row for the newly added field shows its auto-generated key ("field1").
-    const fieldRow = page.getByText('field1', { exact: true }).locator('..');
-    await expect(fieldRow).toBeVisible();
+    await page.getByLabel('Text style').selectOption('1');
+    await expect(doc.locator('h1')).toHaveText('Scope of Work');
 
-    await fieldRow.click();
-    const labelInput = page.getByLabel('Label');
-    await expect(labelInput).toBeVisible();
-    await labelInput.fill('Total Budget');
-
-    await expect(page.getByText('Total Budget')).toBeVisible();
+    await page.keyboard.press('Enter');
+    await page.getByLabel('Text style').selectOption('0');
+    await page.keyboard.type('This section describes the scope.');
+    await expect(doc.locator('p')).toContainText('This section describes the scope.');
   });
 
-  test('adds a Section container and nests a field inside it', async ({ page }) => {
+  test('applies bold formatting from the toolbar', async ({ page }) => {
     await page.goto('/tenantSlug/admin/sows/new');
 
-    await page.getByRole('button', { name: 'Section', exact: true }).click();
-    await expect(page.getByText(/Drop fields here to nest them inside/)).toBeVisible();
+    const doc = page.locator('[contenteditable="true"]');
+    await doc.click();
+    await page.keyboard.type('Important term');
+    await page.keyboard.press('Control+A');
+    await page.getByRole('button', { name: 'Bold' }).click();
+
+    await expect(doc.locator('strong')).toHaveText('Important term');
   });
 
-  test('switches to the live preview and renders the generated form', async ({ page }) => {
+  test('creating a template from the typed document redirects to the SOWs list', async ({ page }) => {
     await page.goto('/tenantSlug/admin/sows/new');
 
-    await page.getByRole('button', { name: 'Text', exact: true }).click();
-    await page.getByRole('tab', { name: 'Live preview' }).click();
+    await page.getByLabel('Name').fill(`E2E Template ${Date.now()}`);
 
-    await expect(page.locator('input[type="text"]').first()).toBeVisible();
-  });
+    const doc = page.locator('[contenteditable="true"]');
+    await doc.click();
+    await page.getByLabel('Text style').selectOption('1');
+    await page.keyboard.type('Project Overview');
+    await page.keyboard.press('Enter');
+    await page.getByLabel('Text style').selectOption('0');
+    await page.keyboard.type('Default overview text.');
 
-  test('shows the generated JSON Schema for a new field', async ({ page }) => {
-    await page.goto('/tenantSlug/admin/sows/new');
-
-    await page.getByRole('button', { name: 'Text', exact: true }).click();
-    await page.getByRole('tab', { name: 'JSON Schema' }).click();
-
-    const schemaText = page.locator('textarea.font-mono');
-    await expect(schemaText).toBeVisible();
-    await expect(schemaText).toHaveValue(/"type": "object"/);
+    await page.getByRole('button', { name: 'Create template' }).click();
+    await page.waitForURL(/\/admin\/sows$/);
   });
 });

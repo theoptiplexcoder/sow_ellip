@@ -92,7 +92,7 @@ export function SowsYardPage() {
   function handlePublish(sow: SowRow) {
     const segments = pathname.split('/').filter(Boolean);
     const basePath = segments.length >= 2 ? `/${segments[0]}/${segments[1]}` : '/tenantSlug/participant';
-    router.push(`${basePath}/workflows/yard`);
+    router.push(`${basePath}/sows/edit?id=${sow.id}`);
   }
 
   return (
@@ -130,22 +130,7 @@ export function SowsYardPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex flex-wrap items-center gap-1 gap-y-1 rounded-lg border border-border bg-muted/40 p-0.5">
-            {STATUS_FILTERS.map((f) => (
-              <button
-                key={f.value}
-                type="button"
-                onClick={() => setStatusFilter(f.value)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  statusFilter === f.value
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          
           <span className="text-sm text-muted-foreground">
             {visible.length} SOW{visible.length !== 1 ? 's' : ''}
           </span>
@@ -158,7 +143,6 @@ export function SowsYardPage() {
             <TableHead>
               <Th>SOW</Th>
               <Th>Project</Th>
-              <Th>Status</Th>
               <Th>Version</Th>
               <Th>Updated</Th>
               <Th className="text-right">Actions</Th>
@@ -184,25 +168,20 @@ export function SowsYardPage() {
                     </div>
                   </Td>
                   <Td>{sow.project}</Td>
-                  <Td>
-                    <Badge tone={STATUS_TONE[sow.status]}>{STATUS_LABEL[sow.status]}</Badge>
-                  </Td>
                   <Td className="text-muted-foreground">v{sow.version}</Td>
                   <Td className="text-muted-foreground">{sow.updatedAt}</Td>
                   <Td className="text-right">
-                    {sow.status === 'DRAFT' && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePublish(sow);
-                        }}
-                      >
-                        <Play className="h-3.5 w-3.5" />
-                        Publish
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePublish(sow);
+                      }}
+                    >
+                      <Play className="mr-2 h-3.5 w-3.5" />
+                      Use this Template
+                    </Button>
                   </Td>
                 </tr>
               ))}
@@ -286,12 +265,10 @@ export function SowsYardPage() {
               <Button variant="ghost" onClick={closeSidebar}>
                 Close
               </Button>
-              {selectedSow.status === 'DRAFT' && (
-                <Button onClick={() => handlePublish(selectedSow)}>
-                  <Play className="h-4 w-4" />
-                  Publish
-                </Button>
-              )}
+              <Button onClick={() => handlePublish(selectedSow)}>
+                <Play className="mr-2 h-4 w-4" />
+                Use this Template
+              </Button>
             </div>
           </div>
         )}

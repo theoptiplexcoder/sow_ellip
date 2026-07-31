@@ -101,7 +101,7 @@ export function TemplateBuilder({
   const selectedField = selectedPath ? getNodeAtPath(fields, selectedPath) : undefined;
 
   return (
-    <Tabs defaultValue="fields">
+    <Tabs defaultValue="preview">
       <TabsList>
         <TabsTrigger value="fields">Fields</TabsTrigger>
         <TabsTrigger value="schema">JSON Schema</TabsTrigger>

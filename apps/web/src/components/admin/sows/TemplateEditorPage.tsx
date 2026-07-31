@@ -2,14 +2,15 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import type { JSONContent } from '@tiptap/core';
 import { PageHeader } from '../../ui/page-header';
 import { Button } from '../../ui/button';
 
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
-import { TemplateBuilder } from './builder/TemplateBuilder';
-import type { FieldDraft } from './builder/fieldTypes';
-import { useTemplateStore, type SchemaOverride } from './templateStore';
+import { DocumentEditor } from './document/DocumentEditor';
+import { docToSchemaOverride, EMPTY_DOC } from './document/docToSchema';
+import { useTemplateStore } from './templateStore';
 
 export function TemplateEditorPage({ templateId }: { templateId?: string }) {
   const router = useRouter();
@@ -19,16 +20,7 @@ export function TemplateEditorPage({ templateId }: { templateId?: string }) {
 
   const [name, setName] = useState(editing?.name ?? '');
   const [description, setDescription] = useState(editing?.description ?? '');
-  const [fields, setFields] = useState<FieldDraft[]>(editing?.fields ?? []);
-  const [schemaOverride, setSchemaOverride] = useState<SchemaOverride | null>(() => {
-    const hasCustomSchema =
-      editing &&
-      editing.fields.length === 0 &&
-      Object.keys(editing.jsonSchema.properties ?? {}).length > 0;
-    return hasCustomSchema
-      ? { jsonSchema: editing.jsonSchema, uiSchema: editing.uiSchema, defaultValues: editing.defaultValues }
-      : null;
-  });
+  const [body, setBody] = useState<JSONContent>(editing?.body ?? EMPTY_DOC);
   const [nameError, setNameError] = useState<string | null>(null);
 
   function goToList() {
@@ -48,14 +40,17 @@ export function TemplateEditorPage({ templateId }: { templateId?: string }) {
       setNameError('A template with this name already exists in your organization.');
       return;
     }
-    upsertTemplate({
+    const payload = {
       id: editing?.id,
       name: trimmed,
       description,
-      fields,
-      schemaOverride,
+      fields: [],
+      body,
+      schemaOverride: docToSchemaOverride(body),
       isActive: editing?.isActive ?? true,
-    });
+    };
+    console.log('Template created/saved:', payload);
+    upsertTemplate(payload);
     goToList();
   }
 
@@ -63,7 +58,7 @@ export function TemplateEditorPage({ templateId }: { templateId?: string }) {
     <div>
       <PageHeader
         title={editing ? 'Edit template' : 'New template'}
-        description="Build a JSON-Schema-driven form for this template."
+        description="Type the template as a document; sections become form fields automatically."
         actions={
           <>
             <Button variant="ghost" onClick={goToList}>
@@ -99,13 +94,7 @@ export function TemplateEditorPage({ templateId }: { templateId?: string }) {
       </div>
 
       <div className="mt-6">
-        <TemplateBuilder
-          fields={fields}
-          onFieldsChange={setFields}
-          schemaOverride={schemaOverride}
-          onSchemaOverrideChange={setSchemaOverride}
-          version={editing?.version ?? 1}
-        />
+        <DocumentEditor content={body} onChange={setBody} />
       </div>
     </div>
   );

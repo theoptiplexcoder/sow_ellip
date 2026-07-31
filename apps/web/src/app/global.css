@@ -171,3 +171,235 @@ h4 {
     display: none !important;
   }
 }
+
+/* ProseMirror basic element styling */
+.ProseMirror h1 {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h4 {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h5 {
+  font-size: 1rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h6 {
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror table th,
+.ProseMirror table td {
+  border: 1px solid var(--color-border);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.ProseMirror table th {
+  background-color: var(--color-muted);
+  font-weight: 600;
+}
+
+.ProseMirror ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+
+.ProseMirror ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.ProseMirror ul[data-type='taskList'] li > label {
+  margin-top: 0.2rem;
+}
+
+.ProseMirror ul[data-type='taskList'] li > div {
+  flex: 1;
+}
+
+.ProseMirror pre {
+  background-color: var(--color-muted);
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--color-muted-foreground);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.placeholder-variable {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.25rem;
+  padding: 0 0.35rem;
+  background-color: var(--color-accent);
+  color: var(--color-accent-foreground);
+  font-size: 0.85em;
+  font-family: ui-monospace, monospace;
+}
+
+.page-break {
+  position: relative;
+  height: 1.5rem;
+  margin: 0.5rem 0;
+  border-top: 1px dashed var(--color-border);
+}
+
+.page-break::after {
+  content: 'Page break';
+  position: absolute;
+  top: -0.6rem;
+  left: 1rem;
+  background-color: var(--color-background);
+  padding: 0 0.4rem;
+  font-size: 0.7rem;
+  color: var(--color-muted-foreground);
+}
+
+@media print {
+  .page-break {
+    height: 0;
+    border-top: none;
+    page-break-after: always;
+  }
+}
+
+.signature-block {
+  display: flex;
+  gap: 2rem;
+  margin: 1.5rem 0;
+}
+
+.signature-block-line {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 10rem;
+}
+
+.signature-block-line span:first-child {
+  font-size: 0.8rem;
+  color: var(--color-muted-foreground);
+}
+
+.signature-block-rule {
+  border-bottom: 1px solid var(--color-border);
+  height: 1.75rem;
+}
+
+.slash-menu {
+  position: absolute;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  min-width: 14rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  background-color: var(--color-card);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 0.25rem;
+}
+
+.slash-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  border-radius: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.slash-menu-item.is-selected,
+.slash-menu-item:hover {
+  background-color: var(--color-accent);
+}
+
+.slash-menu-item-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+
+.slash-menu-item-desc {
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+}
+
+.search-match {
+  background-color: rgba(217, 119, 6, 0.3);
+}
+
+.search-match-active {
+  background-color: rgba(217, 119, 6, 0.6);
+}
