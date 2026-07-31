@@ -4,11 +4,8 @@ import { saveTemplatesToFile } from '../../../actions/saveTemplateAction';
 import { SAVED_TEMPLATES } from './savedTemplates';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import type { JSONContent } from '@tiptap/core';
-import {
-  buildObjectSchema,
-  draftsToDefaultValues,
-  type FieldDraft,
-} from './builder/fieldTypes';
+import { buildObjectSchema, draftsToDefaultValues } from './fieldTypes';
+import type { FieldDraft } from './types';
 import { diffSchemaValues, recordVersion } from './sowVersionHistory';
 
 export type TemplateRow = {
@@ -84,12 +81,12 @@ const SEED_INPUT: SeedTemplate[] = [
     fields: [
       {
         key: 'overview',
-        kind: 'longText',
+        kind: 'textarea',
         title: 'Overview',
         description: 'Summarize the engagement.',
         required: true,
         readOnly: false,
-        hidden: false,
+        width: '100',
         default: 'This SOW outlines...',
       },
       {
@@ -98,7 +95,7 @@ const SEED_INPUT: SeedTemplate[] = [
         title: 'Budget (USD)',
         required: false,
         readOnly: false,
-        hidden: false,
+        width: '100',
       },
     ],
   },
