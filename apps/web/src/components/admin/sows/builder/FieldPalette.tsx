@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Calendar } from 'lucide-react';
 import { cn } from '../../../../lib/cn';
 import { FIELD_CATEGORY_LABELS, FIELD_KIND_LABELS, FIELD_PALETTE, type FieldCategory, type FieldKind } from './types';
 
@@ -42,10 +42,11 @@ export function FieldPalette({ onAdd }: { onAdd: (kind: FieldKind) => void }) {
                   onDragStart={(e) => e.dataTransfer.setData(DRAG_KIND_MIME, kind)}
                   onClick={() => onAdd(kind)}
                   className={cn(
-                    'cursor-grab rounded-md border border-border bg-card px-2 py-1.5 text-left text-xs font-medium text-foreground',
+                    'flex items-center gap-1.5 cursor-grab rounded-md border border-border bg-card px-2 py-1.5 text-left text-xs font-medium text-foreground',
                     'hover:border-primary/40 hover:bg-accent/40 active:cursor-grabbing',
                   )}
                 >
+                  {kind === 'date' && <Calendar className="h-3.5 w-3.5 text-muted-foreground" />}
                   {FIELD_KIND_LABELS[kind]}
                 </button>
               ))}

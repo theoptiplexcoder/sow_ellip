@@ -23,6 +23,23 @@ import {
 
 const MOVE_MIME = 'text/x-sow-move-path';
 
+/** Thin target placed above the first row of a list so a field can be dropped into the lead position. */
+function DropEdge({ onDrop }: { onDrop: (e: React.DragEvent) => void }) {
+  return (
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onDrop={(e) => {
+        e.stopPropagation();
+        onDrop(e);
+      }}
+      className="-my-1 h-2"
+    />
+  );
+}
+
 export function Canvas({
   fields,
   onFieldsChange,
@@ -72,6 +89,7 @@ export function Canvas({
 
   return (
     <div className="space-y-2" onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDropAt([], fields.length, e)}>
+      <DropEdge onDrop={(e) => handleDropAt([], 0, e)} />
       {fields.map((field, i) => (
         <FieldRow
           key={i}
@@ -177,18 +195,21 @@ function FieldRow({
               Drop fields here to nest them inside &quot;{field.title || field.key}&quot;.
             </p>
           ) : (
-            (field.children ?? []).map((child, i) => (
-              <FieldRow
-                key={i}
-                field={child}
-                path={[...path, i]}
-                fields={fields}
-                onFieldsChange={onFieldsChange}
-                selectedPath={selectedPath}
-                onSelect={onSelect}
-                onDropAt={onDropAt}
-              />
-            ))
+            <>
+              <DropEdge onDrop={(e) => onDropAt(path, 0, e)} />
+              {(field.children ?? []).map((child, i) => (
+                <FieldRow
+                  key={i}
+                  field={child}
+                  path={[...path, i]}
+                  fields={fields}
+                  onFieldsChange={onFieldsChange}
+                  selectedPath={selectedPath}
+                  onSelect={onSelect}
+                  onDropAt={onDropAt}
+                />
+              ))}
+            </>
           )}
         </div>
       )}

@@ -53,10 +53,13 @@ export function insertNodeAtParentPath(
 
 export function moveNodeWithinParent(fields: FieldDraft[], parentPath: number[], from: number, to: number): FieldDraft[] {
   return updateListAtPath(fields, parentPath, (list) => {
-    if (to < 0 || to >= list.length) return list;
+    if (from < 0 || from >= list.length || to < 0 || to > list.length) return list;
     const next = [...list];
     const [item] = next.splice(from, 1);
-    next.splice(to, 0, item);
+    // Removing `from` shifts every later index left by one, so a target
+    // index that was past the removed item needs the same adjustment.
+    const insertAt = from < to ? to - 1 : to;
+    next.splice(insertAt, 0, item);
     return next;
   });
 }
