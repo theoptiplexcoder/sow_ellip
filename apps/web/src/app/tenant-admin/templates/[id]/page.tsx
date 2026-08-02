@@ -1,3 +1,6 @@
+'use client';
+
+import { use } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -7,12 +10,12 @@ import { DocxEditorTemplateEditor } from '@/components/tenant-admin/docx-editor-
 import { TemplateExportActions } from '@/components/tenant-admin/template-export-actions';
 import { getTemplate, hasPlaceholders } from '@/lib/data/templates';
 
-export default async function TemplateDetailPage({
+export default function TemplateDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id } = use(params);
   const template = getTemplate(id);
   if (!template) notFound();
 

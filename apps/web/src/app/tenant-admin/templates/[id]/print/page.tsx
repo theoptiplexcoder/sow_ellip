@@ -1,13 +1,16 @@
+'use client';
+
 import './print.css';
+import { use } from 'react';
 import { notFound } from 'next/navigation';
 import { getTemplate } from '@/lib/data/templates';
 
-export default async function TemplatePrintPage({
+export default function TemplatePrintPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id } = use(params);
   const template = getTemplate(id);
   if (!template) notFound();
 
