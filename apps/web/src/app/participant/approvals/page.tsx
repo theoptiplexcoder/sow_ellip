@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@sow-platform/ui';
+import { EmptyState } from '@/components/shared/empty-state';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { DataList } from '@/components/shared/data-list';
@@ -48,16 +49,11 @@ export default function ApprovalsPage() {
       </h2>
 
       {pending.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-16 text-center">
-          <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-            <Inbox className="size-6 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-medium">You have no pending approvals</p>
-          <p className="max-w-sm text-sm text-muted-foreground">
-            When a SOW is submitted on one of your Approver-role projects, it
-            will show up here for review.
-          </p>
-        </div>
+        <EmptyState
+          icon={Inbox}
+          title="You have no pending approvals"
+          description="When a SOW is submitted on one of your Approver-role projects, it will show up here for review."
+        />
       ) : (
         <DataList<Sow>
           data={pending}

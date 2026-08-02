@@ -17,9 +17,10 @@ import {
   Label,
 } from '@sow-platform/ui';
 import {
-  createWorkflowTemplate,
+  workflowTemplates,
   type WorkflowTemplate,
 } from '@/lib/data/workflow-templates';
+import { createWorkflowTemplate } from '@/lib/actions/workflow-templates';
 
 export function NewWorkflowTemplateDialog({
   onCreated,
@@ -44,17 +45,17 @@ export function NewWorkflowTemplateDialog({
         </DialogHeader>
         <form
           className="flex flex-col gap-4"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            const name = new FormData(e.currentTarget).get('name') as string;
+            const form = e.currentTarget;
+            const name = new FormData(form).get('name') as string;
             if (!name?.trim()) return;
-            const template = createWorkflowTemplate(name.trim());
+            const template = await createWorkflowTemplate(name.trim());
+            workflowTemplates.push(template);
             onCreated(template);
-            toast.success(
-              'Workflow template created (prototype only — not persisted)',
-            );
+            toast.success('Workflow template created');
             setOpen(false);
-            e.currentTarget.reset();
+            form.reset();
           }}
         >
           <div className="flex flex-col gap-2">

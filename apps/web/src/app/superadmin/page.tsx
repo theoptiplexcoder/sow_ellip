@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@sow-platform/ui';
+import { Surface } from '@/components/shared/surface';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionEyebrow } from '@/components/shared/section-eyebrow';
 import { StatStrip } from '@/components/shared/stat-strip';
@@ -83,7 +84,7 @@ export default function SuperadminDashboard() {
             label="Organizations"
             description={`${totalTenants} tenant${totalTenants === 1 ? '' : 's'}, newest first`}
           />
-          <div className="overflow-hidden rounded-lg border border-border">
+          <Surface>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -124,7 +125,7 @@ export default function SuperadminDashboard() {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </Surface>
         </section>
 
         <section>
@@ -134,24 +135,29 @@ export default function SuperadminDashboard() {
             label="Recent platform activity"
             description="Latest platform-level events"
           />
-          <ScrollArea className="h-72 pr-4">
-            <ul className="relative flex flex-col gap-4 border-l border-border pl-6">
-              {recentActivity.map((event) => (
-                <li key={event.id} className="relative flex items-start gap-3">
-                  <span className="absolute top-1 -left-[29px] size-2.5 rounded-full border-2 border-background bg-muted-foreground" />
-                  <div className="text-sm">
-                    <span className="font-medium">{event.event}</span>{' '}
-                    <span className="text-muted-foreground">
-                      — {event.detail}
-                    </span>
-                    <div className="text-xs text-muted-foreground">
-                      {event.actor} · {event.timestamp}
+          <Surface contentClassName="p-4">
+            <ScrollArea className="h-72 pr-4">
+              <ul className="relative flex flex-col gap-4 border-l border-border pl-6">
+                {recentActivity.map((event) => (
+                  <li
+                    key={event.id}
+                    className="relative flex items-start gap-3"
+                  >
+                    <span className="absolute top-1 -left-[29px] size-2.5 rounded-full border-2 border-background bg-muted-foreground" />
+                    <div className="text-sm">
+                      <span className="font-medium">{event.event}</span>{' '}
+                      <span className="text-muted-foreground">
+                        — {event.detail}
+                      </span>
+                      <div className="text-xs text-muted-foreground">
+                        {event.actor} · {event.timestamp}
+                      </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </ScrollArea>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
+          </Surface>
         </section>
       </div>
     </div>

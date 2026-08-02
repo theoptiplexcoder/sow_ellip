@@ -15,6 +15,7 @@ import {
 import { PageHeader } from '@/components/shared/page-header';
 import { DataList } from '@/components/shared/data-list';
 import { StatusPill } from '@/components/shared/status-badge';
+import { Surface } from '@/components/shared/surface';
 import { CreateOrganizationDialog } from '@/components/superadmin/create-organization-dialog';
 import { organizations, type Organization } from '@/lib/data/organizations';
 
@@ -56,7 +57,10 @@ export default function OrganizationsPage() {
         }
       />
 
-      <div className="mb-6 flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+      <Surface
+        className="mb-6 bg-muted/30"
+        contentClassName="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"
+      >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Input
             placeholder="Search by name or slug..."
@@ -81,7 +85,7 @@ export default function OrganizationsPage() {
         <span className="text-xs text-muted-foreground">
           {filtered.length} of {organizationList.length} organizations
         </span>
-      </div>
+      </Surface>
 
       <DataList<Organization>
         data={filtered}

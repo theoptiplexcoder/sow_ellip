@@ -21,23 +21,30 @@ import {
 } from '@sow-platform/ui';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { currentUsers } from '@/lib/data/current-user';
-import { decideSow, type Sow } from '@/lib/data/sows';
+import type { Sow } from '@/lib/data/sows';
+import { decideSow } from '@/lib/actions/sows';
 
 export function ApproverDecisionPanel({ sow }: { sow: Sow }) {
   const router = useRouter();
   const [comment, setComment] = useState('');
   const [pendingAction, setPendingAction] = useState<'reject' | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  function submitDecision(kind: 'approve' | 'reject') {
+  async function submitDecision(kind: 'approve' | 'reject') {
     if (kind === 'reject' && comment.trim() === '') return;
-    decideSow(sow.id, kind === 'approve' ? 'approved' : 'rejected', {
-      actor: currentUsers.participant.name,
-      comment: comment.trim() || undefined,
-    });
-    toast.success(kind === 'approve' ? 'SOW approved' : 'SOW rejected');
-    setPendingAction(null);
-    setComment('');
-    router.refresh();
+    setSubmitting(true);
+    try {
+      await decideSow(sow.id, kind === 'approve' ? 'approved' : 'rejected', {
+        actor: currentUsers.participant.name,
+        comment: comment.trim() || undefined,
+      });
+      toast.success(kind === 'approve' ? 'SOW approved' : 'SOW rejected');
+      setPendingAction(null);
+      setComment('');
+      router.refresh();
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -59,6 +66,7 @@ export function ApproverDecisionPanel({ sow }: { sow: Sow }) {
           <Button
             size="lg"
             onClick={() => submitDecision('approve')}
+            disabled={submitting}
             className="flex-1"
           >
             <CheckCircle2 className="size-4" />
@@ -73,7 +81,7 @@ export function ApproverDecisionPanel({ sow }: { sow: Sow }) {
               size="lg"
               variant="destructive"
               className="flex-1"
-              disabled={comment.trim() === ''}
+              disabled={comment.trim() === '' || submitting}
               onClick={() => setPendingAction('reject')}
             >
               <XCircle className="size-4" />
@@ -89,7 +97,10 @@ export function ApproverDecisionPanel({ sow }: { sow: Sow }) {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => submitDecision('reject')}>
+                <AlertDialogAction
+                  disabled={submitting}
+                  onClick={() => submitDecision('reject')}
+                >
                   Confirm Reject
                 </AlertDialogAction>
               </AlertDialogFooter>

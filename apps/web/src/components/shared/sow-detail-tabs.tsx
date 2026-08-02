@@ -1,9 +1,11 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import type { DocxEditorRef } from '@eigenpal/docx-editor-react';
 import {
   Alert,
   AlertDescription,
@@ -14,11 +16,14 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Input,
+  Label,
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -30,15 +35,33 @@ import {
   TabsList,
   TabsTrigger,
 } from '@sow-platform/ui';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, FileText, FormInput } from 'lucide-react';
+import { SectionEyebrow } from '@/components/shared/section-eyebrow';
+import { SowAiAgentPanel } from '@/components/shared/sow-ai-agent-panel';
 import { SowBuilderSections } from '@/components/shared/sow-builder-sections';
 import { SowCommentsPanel } from '@/components/shared/sow-comments-panel';
 import { SowExportActions } from '@/components/shared/sow-export-actions';
 import { SowStateStrip } from '@/components/shared/sow-state-strip';
 import { SowStatusBadge } from '@/components/shared/status-badge';
+import { Surface } from '@/components/shared/surface';
 import { WorkflowTimeline } from '@/components/shared/workflow-timeline';
 import { type Sow, submitSowForApproval, updateSow } from '@/lib/data/sows';
 import { auditLogs } from '@/lib/data/audit-logs';
+import { hasAnyProviderApiKey } from '@/lib/data/ai-settings';
+import { getTemplate } from '@/lib/data/templates';
+import { generateDocxBlob } from '@/lib/docx/generate-docx';
+import { fillPlaceholders, placeholderLabel } from '@/lib/docx/placeholders';
+import { parseDocxFile } from '@/lib/docx/parse-docx';
+
+const TINT = 'var(--status-pending)';
+
+const DocxEditor = dynamic(
+  () => import('@eigenpal/docx-editor-react').then((m) => m.DocxEditor),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[36rem] rounded-md border" />,
+  },
+);
 
 export function SowDetailTabs({
   sow,
@@ -56,7 +79,61 @@ export function SowDetailTabs({
     (a) => a.entityName.includes(sow.number) || a.entityType === 'SOW',
   );
 
-  function handleSaveDraft() {
+  const isDraft = sow.status === 'draft';
+  const template = sow.templateId ? getTemplate(sow.templateId) : undefined;
+  const isTemplated = isDraft && !!template;
+  const showAgentPanel = hasAnyProviderApiKey();
+
+  const [values, setValues] = useState<Record<string, string>>(
+    sow.placeholderValues ?? {},
+  );
+  const [buffer, setBuffer] = useState<ArrayBuffer | null>(null);
+  const [saving, setSaving] = useState(false);
+  const editorRef = useRef<DocxEditorRef>(null);
+
+  useEffect(() => {
+    if (!isTemplated || !template) return;
+    let cancelled = false;
+    generateDocxBlob(fillPlaceholders(template.bodyHtml, values))
+      .then((blob) => blob.arrayBuffer())
+      .then((buf) => {
+        if (!cancelled) setBuffer(buf);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sow.id]);
+
+  function applyValuesToDocument() {
+    if (!template) return;
+    setBuffer(null);
+    generateDocxBlob(fillPlaceholders(template.bodyHtml, values))
+      .then((blob) => blob.arrayBuffer())
+      .then(setBuffer);
+  }
+
+  async function handleSaveDraft() {
+    if (isTemplated && template) {
+      setSaving(true);
+      try {
+        const buf = await editorRef.current?.save();
+        let documentHtml = fillPlaceholders(template.bodyHtml, values);
+        if (buf) {
+          const file = new File([buf], `${sow.title}.docx`, {
+            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          });
+          documentHtml = (await parseDocxFile(file)).html;
+        }
+        updateSow(sow.id, { placeholderValues: values, documentHtml });
+        toast.success('Draft saved');
+        router.refresh();
+      } catch {
+        toast.error('Could not save this draft — try again.');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     updateSow(sow.id, { sections: draftRef.current });
     toast.success('Draft saved');
     router.refresh();
@@ -136,15 +213,104 @@ export function SowDetailTabs({
           <SowStateStrip status={sow.status} />
           <SowExportActions sowId={sow.id} />
         </div>
-        <SowBuilderSections
-          sow={sow}
-          onDraftChange={(next) => {
-            draftRef.current = next;
-          }}
-        />
+        {isTemplated && template ? (
+          <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+            <div>
+              <SectionEyebrow
+                icon={FormInput}
+                tint={TINT}
+                label="Placeholder values"
+                description={`From "${template.name}"`}
+              />
+              <Card>
+                <CardContent className="flex flex-col gap-4 pt-6">
+                  {template.placeholders.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      This template has no placeholders to fill.
+                    </p>
+                  )}
+                  {template.placeholders.map((token) => (
+                    <div key={token} className="flex flex-col gap-1.5">
+                      <Label htmlFor={`ph-${token}`}>
+                        {placeholderLabel(token)}
+                      </Label>
+                      <Input
+                        id={`ph-${token}`}
+                        value={values[token] ?? ''}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setValues((prev) => ({
+                            ...prev,
+                            [token]: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={applyValuesToDocument}
+                  >
+                    Apply to document
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div
+              className={
+                showAgentPanel
+                  ? 'grid gap-6 xl:grid-cols-[1fr_340px]'
+                  : undefined
+              }
+            >
+              <div>
+                <SectionEyebrow
+                  icon={FileText}
+                  tint={TINT}
+                  label="Document"
+                  description="Edit the generated document directly"
+                />
+                {buffer ? (
+                  <DocxEditor
+                    ref={editorRef}
+                    documentBuffer={buffer}
+                    mode="editing"
+                    showZoomControl={false}
+                    documentName={sow.title}
+                    documentNameEditable={false}
+                    className="h-[36rem] rounded-md border"
+                  />
+                ) : (
+                  <Skeleton className="h-[36rem] rounded-md border" />
+                )}
+              </div>
+              {showAgentPanel && (
+                <div className="xl:sticky xl:top-6 xl:self-start">
+                  <SowAiAgentPanel sow={sow} />
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div
+            className={
+              showAgentPanel ? 'grid gap-6 lg:grid-cols-[1fr_360px]' : undefined
+            }
+          >
+            <SowBuilderSections
+              sow={sow}
+              onDraftChange={(next) => {
+                draftRef.current = next;
+              }}
+            />
+            {showAgentPanel && <SowAiAgentPanel sow={sow} />}
+          </div>
+        )}
         <div className="mt-4 flex flex-wrap justify-end gap-2">
-          <Button variant="outline" onClick={handleSaveDraft}>
-            Save Draft
+          <Button variant="outline" onClick={handleSaveDraft} disabled={saving}>
+            {saving ? 'Saving…' : 'Save Draft'}
           </Button>
           <Button
             variant="outline"
@@ -192,7 +358,7 @@ export function SowDetailTabs({
       </TabsContent>
 
       <TabsContent value="versions">
-        <div className="rounded-md border">
+        <Surface>
           <Table>
             <TableHeader>
               <TableRow>
@@ -248,7 +414,7 @@ export function SowDetailTabs({
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Surface>
       </TabsContent>
 
       <TabsContent value="files">

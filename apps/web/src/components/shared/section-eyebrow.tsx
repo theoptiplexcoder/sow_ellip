@@ -12,15 +12,15 @@ export function SectionEyebrow({
 }) {
   return (
     <div className="mb-4 flex items-end justify-between gap-4">
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-3">
         <span
-          className="flex size-7 items-center justify-center rounded-md"
+          className="flex size-8 items-center justify-center rounded-md"
           style={{
             backgroundColor: `color-mix(in oklab, ${tint} 14%, transparent)`,
             color: tint,
           }}
         >
-          <Icon className="size-3.5" />
+          <Icon className="size-4" />
         </span>
         <div>
           <h2 className="font-display text-base font-semibold tracking-tight">

@@ -47,6 +47,13 @@ export function updateProviderConfig(
   Object.assign(tenantAiSettings.providers[provider], patch);
 }
 
+/** Whether the tenant has configured an API key for at least one provider. */
+export function hasAnyProviderApiKey() {
+  return Object.values(tenantAiSettings.providers).some(
+    (p) => p.apiKey.trim() !== '',
+  );
+}
+
 /** Flattened view of the currently active provider's config, for the agent loop. */
 export function getActiveProviderSettings() {
   const active = tenantAiSettings.providers[tenantAiSettings.activeProvider];

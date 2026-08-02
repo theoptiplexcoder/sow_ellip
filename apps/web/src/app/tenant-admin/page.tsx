@@ -29,6 +29,7 @@ import {
 } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionEyebrow } from '@/components/shared/section-eyebrow';
+import { Surface } from '@/components/shared/surface';
 import { StatStrip } from '@/components/shared/stat-strip';
 import { StatusStackBar } from '@/components/shared/status-stack-bar';
 import { SowStatusBadge } from '@/components/shared/status-badge';
@@ -104,9 +105,9 @@ export default function TenantAdminDashboard() {
             label="Pipeline"
             description={`${sows.length} SOWs across ${clientCount} client${clientCount === 1 ? '' : 's'}`}
           />
-          <div className="rounded-lg border border-border p-4">
+          <Surface contentClassName="p-4">
             <StatusStackBar data={pipelineData} total={sows.length} />
-          </div>
+          </Surface>
         </section>
 
         <section>
@@ -120,7 +121,7 @@ export default function TenantAdminDashboard() {
                 : `up ${approvalTimeDelta.toFixed(1)}d`
             } since March`}
           />
-          <div className="rounded-lg border border-border p-4">
+          <Surface contentClassName="p-4">
             <ChartContainer config={approvalTimeConfig} className="h-48 w-full">
               <LineChart data={approvalTimeData}>
                 <CartesianGrid vertical={false} />
@@ -135,7 +136,7 @@ export default function TenantAdminDashboard() {
                 />
               </LineChart>
             </ChartContainer>
-          </div>
+          </Surface>
         </section>
 
         <div className="grid gap-10 lg:grid-cols-2">
@@ -146,33 +147,38 @@ export default function TenantAdminDashboard() {
               label="Recent activity"
               description="Latest actions across the tenant"
             />
-            <ScrollArea className="h-72 pr-4">
-              <ul className="relative flex flex-col gap-4 border-l border-border pl-6">
-                {recentActivity.map((log) => (
-                  <li key={log.id} className="relative flex items-start gap-3">
-                    <span className="absolute top-1 -left-[29px] size-2.5 rounded-full border-2 border-background bg-muted-foreground" />
-                    <Avatar className="size-7">
-                      <AvatarFallback className="text-xs">
-                        {log.actor
-                          .split(' ')
-                          .map((p) => p[0])
-                          .join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="text-sm">
-                      <span className="font-medium">{log.actor}</span>{' '}
-                      <span className="text-muted-foreground">
-                        {log.action}
-                      </span>{' '}
-                      <span className="font-medium">{log.entityName}</span>
-                      <div className="text-xs text-muted-foreground">
-                        {log.timestamp}
+            <Surface contentClassName="p-4">
+              <ScrollArea className="h-72 pr-4">
+                <ul className="relative flex flex-col gap-4 border-l border-border pl-6">
+                  {recentActivity.map((log) => (
+                    <li
+                      key={log.id}
+                      className="relative flex items-start gap-3"
+                    >
+                      <span className="absolute top-1 -left-[29px] size-2.5 rounded-full border-2 border-background bg-muted-foreground" />
+                      <Avatar className="size-7">
+                        <AvatarFallback className="text-xs">
+                          {log.actor
+                            .split(' ')
+                            .map((p) => p[0])
+                            .join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="text-sm">
+                        <span className="font-medium">{log.actor}</span>{' '}
+                        <span className="text-muted-foreground">
+                          {log.action}
+                        </span>{' '}
+                        <span className="font-medium">{log.entityName}</span>
+                        <div className="text-xs text-muted-foreground">
+                          {log.timestamp}
+                        </div>
                       </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </ScrollArea>
+                    </li>
+                  ))}
+                </ul>
+              </ScrollArea>
+            </Surface>
           </section>
 
           <section>
@@ -184,7 +190,7 @@ export default function TenantAdminDashboard() {
                 description="Most recently updated SOWs"
               />
             </div>
-            <div className="-mt-4 overflow-hidden rounded-lg border border-border">
+            <Surface className="-mt-4">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -218,7 +224,7 @@ export default function TenantAdminDashboard() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+            </Surface>
           </section>
         </div>
       </div>

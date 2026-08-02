@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
+import { Surface } from '@/components/shared/surface';
 import { auditLogs } from '@/lib/data/audit-logs';
 
 const entityTypes = [
@@ -65,7 +66,7 @@ export default function TenantAuditPage() {
         </Select>
       </div>
 
-      <div className="rounded-md border">
+      <Surface>
         <Table>
           <TableHeader>
             <TableRow>
@@ -95,7 +96,7 @@ export default function TenantAuditPage() {
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Surface>
     </div>
   );
 }

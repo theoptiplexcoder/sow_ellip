@@ -5,7 +5,12 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, FileText } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  FileText,
+  Workflow as WorkflowIcon,
+} from 'lucide-react';
 import type { DocxEditorRef } from '@eigenpal/docx-editor-react';
 import {
   Badge,
@@ -24,10 +29,12 @@ import {
   Skeleton,
 } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
+import { WorkflowFlowDiagram } from '@/components/tenant-admin/workflow-flow-diagram';
 import { currentUsers } from '@/lib/data/current-user';
 import { getProjectsForUser } from '@/lib/data/projects';
-import { createSow } from '@/lib/data/sows';
+import { createDraftSow, publishSow } from '@/lib/actions/sows';
 import { templates, hasPlaceholders } from '@/lib/data/templates';
+import { workflowTemplates } from '@/lib/data/workflow-templates';
 import { generateDocxBlob } from '@/lib/docx/generate-docx';
 import { parseDocxFile } from '@/lib/docx/parse-docx';
 import { fillPlaceholders, placeholderLabel } from '@/lib/docx/placeholders';
@@ -40,7 +47,9 @@ const DocxEditor = dynamic(
   },
 );
 
-type Step = 'project' | 'template' | 'fill' | 'edit';
+type Step = 'project' | 'template' | 'fill' | 'edit' | 'workflow';
+
+const STEPS: Step[] = ['project', 'template', 'fill', 'edit', 'workflow'];
 
 export default function NewSowPage() {
   const router = useRouter();
@@ -54,12 +63,24 @@ export default function NewSowPage() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [buffer, setBuffer] = useState<ArrayBuffer | null>(null);
   const [saving, setSaving] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [documentHtml, setDocumentHtml] = useState<string | undefined>(
+    undefined,
+  );
+  const [workflowTemplateId, setWorkflowTemplateId] = useState('');
+  const [publishing, setPublishing] = useState(false);
 
   const editorRef = useRef<DocxEditorRef>(null);
 
   const project = creatorProjects.find((p) => p.id === projectId);
   const template = templates.find((t) => t.id === templateId);
   const availableTemplates = templates.filter((t) => t.status === 'active');
+  const activeWorkflowTemplates = workflowTemplates.filter(
+    (w) => w.status === 'active',
+  );
+  const selectedWorkflow = activeWorkflowTemplates.find(
+    (w) => w.id === workflowTemplateId,
+  );
 
   const filledHtml = useMemo(
     () => (template ? fillPlaceholders(template.bodyHtml, values) : ''),
@@ -94,19 +115,21 @@ export default function NewSowPage() {
     setStep('edit');
   }
 
+  async function captureDocumentHtml(): Promise<string> {
+    const buf = await editorRef.current?.save();
+    if (!buf) return filledHtml;
+    const file = new File([buf], `${title}.docx`, {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+    return (await parseDocxFile(file)).html;
+  }
+
   async function handleSaveDraft() {
     if (!project || !template) return;
     setSaving(true);
     try {
-      const buf = await editorRef.current?.save();
-      let documentHtml = filledHtml;
-      if (buf) {
-        const file = new File([buf], `${title}.docx`, {
-          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        });
-        documentHtml = (await parseDocxFile(file)).html;
-      }
-      const sow = createSow({
+      const html = await captureDocumentHtml();
+      await createDraftSow({
         title: title.trim(),
         clientId: project.clientId,
         clientName: project.clientName,
@@ -116,14 +139,53 @@ export default function NewSowPage() {
         templateName: template.name,
         templateId: template.id,
         placeholderValues: values,
-        documentHtml,
+        documentHtml: html,
       });
-      toast.success('SOW saved as draft (prototype only — not persisted)');
-      router.push(`/participant/my-sows/${sow.id}`);
+      toast.success('SOW saved as draft');
+      router.push('/participant/my-sows');
     } catch {
       toast.error('Could not save this draft — try again.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function goToWorkflow() {
+    setCapturing(true);
+    try {
+      setDocumentHtml(await captureDocumentHtml());
+      setStep('workflow');
+    } finally {
+      setCapturing(false);
+    }
+  }
+
+  async function handlePublish() {
+    if (!project || !template || !selectedWorkflow) return;
+    setPublishing(true);
+    try {
+      await publishSow(
+        {
+          title: title.trim(),
+          clientId: project.clientId,
+          clientName: project.clientName,
+          projectId: project.id,
+          projectName: project.name,
+          creator: me.name,
+          templateName: template.name,
+          templateId: template.id,
+          placeholderValues: values,
+          documentHtml: documentHtml ?? filledHtml,
+        },
+        selectedWorkflow.id,
+        selectedWorkflow.name,
+      );
+      toast.success('SOW published — approval process started');
+      router.push('/participant/my-sows');
+    } catch {
+      toast.error('Could not publish this SOW — try again.');
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -137,14 +199,12 @@ export default function NewSowPage() {
       </Link>
       <PageHeader
         title="New SOW"
-        description="Generate a SOW from a template, then refine it before saving as a draft."
+        description="Generate a SOW from a template, refine it, then choose a workflow to publish for approval — or save as a draft to finish later."
       />
 
       <div className="mb-8 flex items-center gap-1.5 sm:gap-2">
-        {(['project', 'template', 'fill', 'edit'] as Step[]).map((s, i) => {
-          const stepIndex = (
-            ['project', 'template', 'fill', 'edit'] as Step[]
-          ).indexOf(step);
+        {STEPS.map((s, i) => {
+          const stepIndex = STEPS.indexOf(step);
           const done = i < stepIndex;
           return (
             <div
@@ -172,10 +232,14 @@ export default function NewSowPage() {
                       ? 'Template & Details'
                       : s === 'fill'
                         ? 'Fill Placeholders'
-                        : 'Edit Document'}
+                        : s === 'edit'
+                          ? 'Edit Document'
+                          : 'Workflow'}
                 </span>
               </div>
-              {i < 3 && <span className="h-px flex-1 bg-border" />}
+              {i < STEPS.length - 1 && (
+                <span className="h-px flex-1 bg-border" />
+              )}
             </div>
           );
         })}
@@ -335,7 +399,8 @@ export default function NewSowPage() {
           <CardHeader>
             <CardTitle className="text-base">Edit document</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Make any final adjustments, then save your SOW as a draft.
+              Make any final adjustments, then save as a draft to finish later,
+              or continue to choose an approval workflow.
             </p>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -352,12 +417,95 @@ export default function NewSowPage() {
               <Skeleton className="h-[36rem] rounded-md border" />
             )}
 
-            <div className="flex justify-between border-t pt-4">
+            <div className="flex flex-wrap justify-between gap-2 border-t pt-4">
               <Button variant="outline" onClick={() => setStep('fill')}>
                 Back
               </Button>
-              <Button onClick={handleSaveDraft} disabled={saving}>
-                {saving ? 'Saving…' : 'Save as Draft'}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={saving || capturing}
+                >
+                  {saving ? 'Saving…' : 'Save as Draft'}
+                </Button>
+                <Button onClick={goToWorkflow} disabled={capturing}>
+                  {capturing ? 'Loading…' : 'Next'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 'workflow' && template && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Choose an approval workflow
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Select the workflow that will govern approval for this SOW, then
+              publish to start the approval process.
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-6">
+            <div>
+              <Label className="mb-3 block">Available workflows</Label>
+              {activeWorkflowTemplates.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No active workflow templates are available. Ask a tenant admin
+                  to publish one before submitting this SOW.
+                </p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {activeWorkflowTemplates.map((w) => (
+                    <Card
+                      key={w.id}
+                      className={`cursor-pointer transition-colors ${
+                        workflowTemplateId === w.id
+                          ? 'border-primary ring-1 ring-primary'
+                          : 'hover:border-muted-foreground/50'
+                      }`}
+                      onClick={() => setWorkflowTemplateId(w.id)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between gap-2 text-sm">
+                          <span className="flex min-w-0 items-center gap-2">
+                            <WorkflowIcon className="size-4 shrink-0 text-muted-foreground" />
+                            <span className="truncate">{w.name}</span>
+                          </span>
+                          {workflowTemplateId === w.id && (
+                            <Check className="size-4 shrink-0 text-primary" />
+                          )}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-xs text-muted-foreground">
+                        {w.steps.length}{' '}
+                        {w.steps.length === 1 ? 'step' : 'steps'}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {selectedWorkflow && (
+              <div>
+                <Label className="mb-3 block">Approval steps</Label>
+                <WorkflowFlowDiagram steps={selectedWorkflow.steps} />
+              </div>
+            )}
+
+            <div className="flex justify-between border-t pt-4">
+              <Button variant="outline" onClick={() => setStep('edit')}>
+                Back
+              </Button>
+              <Button
+                onClick={handlePublish}
+                disabled={!selectedWorkflow || publishing}
+              >
+                {publishing ? 'Publishing…' : 'Publish'}
               </Button>
             </div>
           </CardContent>

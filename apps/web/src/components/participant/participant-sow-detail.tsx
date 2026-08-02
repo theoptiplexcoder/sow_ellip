@@ -56,6 +56,7 @@ import { SowBuilderSections } from '@/components/shared/sow-builder-sections';
 import { SowExportActions } from '@/components/shared/sow-export-actions';
 import { SowStateStrip } from '@/components/shared/sow-state-strip';
 import { SowStatusBadge } from '@/components/shared/status-badge';
+import { Surface } from '@/components/shared/surface';
 import { WorkflowTimeline } from '@/components/shared/workflow-timeline';
 import { SowDocumentActions } from '@/components/participant/sow-document-actions';
 import { SowDocumentViewer } from '@/components/participant/sow-document-viewer';
@@ -68,6 +69,7 @@ import {
   updateSow,
 } from '@/lib/data/sows';
 import { currentUsers } from '@/lib/data/current-user';
+import { hasAnyProviderApiKey } from '@/lib/data/ai-settings';
 import { getTemplate } from '@/lib/data/templates';
 import { generateDocxBlob } from '@/lib/docx/generate-docx';
 import { fillPlaceholders, placeholderLabel } from '@/lib/docx/placeholders';
@@ -96,6 +98,7 @@ export function ParticipantSowDetail({
   const isDraft = sow.status === 'draft';
   const template = sow.templateId ? getTemplate(sow.templateId) : undefined;
   const isTemplated = isDraft && !!template;
+  const showAgentPanel = hasAnyProviderApiKey();
 
   const draftRef = useRef(sow.sections);
   const [values, setValues] = useState<Record<string, string>>(
@@ -248,30 +251,49 @@ export function ParticipantSowDetail({
                 </Card>
               </div>
 
-              <div>
-                <SectionEyebrow
-                  icon={FileText}
-                  tint={TINT}
-                  label="Document"
-                  description="Edit the generated document directly"
-                />
-                {buffer ? (
-                  <DocxEditor
-                    ref={editorRef}
-                    documentBuffer={buffer}
-                    mode="editing"
-                    showZoomControl={false}
-                    documentName={sow.title}
-                    documentNameEditable={false}
-                    className="h-[36rem] rounded-md border"
+              <div
+                className={
+                  showAgentPanel
+                    ? 'grid gap-6 xl:grid-cols-[1fr_340px]'
+                    : undefined
+                }
+              >
+                <div>
+                  <SectionEyebrow
+                    icon={FileText}
+                    tint={TINT}
+                    label="Document"
+                    description="Edit the generated document directly"
                   />
-                ) : (
-                  <Skeleton className="h-[36rem] rounded-md border" />
+                  {buffer ? (
+                    <DocxEditor
+                      ref={editorRef}
+                      documentBuffer={buffer}
+                      mode="editing"
+                      showZoomControl={false}
+                      documentName={sow.title}
+                      documentNameEditable={false}
+                      className="h-[36rem] rounded-md border"
+                    />
+                  ) : (
+                    <Skeleton className="h-[36rem] rounded-md border" />
+                  )}
+                </div>
+                {showAgentPanel && (
+                  <div className="xl:sticky xl:top-6 xl:self-start">
+                    <SowAiAgentPanel sow={sow} />
+                  </div>
                 )}
               </div>
             </div>
           ) : (
-            <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+            <div
+              className={
+                showAgentPanel
+                  ? 'grid gap-6 lg:grid-cols-[1fr_360px]'
+                  : undefined
+              }
+            >
               <SowBuilderSections
                 key={sow.updatedAt}
                 sow={sow}
@@ -279,7 +301,7 @@ export function ParticipantSowDetail({
                   draftRef.current = next;
                 }}
               />
-              <SowAiAgentPanel sow={sow} />
+              {showAgentPanel && <SowAiAgentPanel sow={sow} />}
             </div>
           )
         ) : (
@@ -442,7 +464,7 @@ export function ParticipantSowDetail({
               label="Versions"
               description={`${sow.revisions.length} revision${sow.revisions.length === 1 ? '' : 's'}`}
             />
-            <div className="rounded-md border">
+            <Surface>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -500,7 +522,7 @@ export function ParticipantSowDetail({
                   ))}
                 </TableBody>
               </Table>
-            </div>
+            </Surface>
           </section>
 
           <section>

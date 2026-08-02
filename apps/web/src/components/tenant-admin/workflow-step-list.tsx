@@ -154,7 +154,10 @@ function StepFormDialog({
                   setApprovalLogic(value)
                 }
               >
-                <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <label
+                  className="flex cursor-pointer items-start gap-2 text-sm"
+                  onClick={() => setApprovalLogic('ALL')}
+                >
                   <RadioGroupItem value="ALL" className="mt-0.5" />
                   <span>
                     <span className="font-medium">
@@ -167,7 +170,10 @@ function StepFormDialog({
                     </span>
                   </span>
                 </label>
-                <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <label
+                  className="flex cursor-pointer items-start gap-2 text-sm"
+                  onClick={() => setApprovalLogic('ANY')}
+                >
                   <RadioGroupItem value="ANY" className="mt-0.5" />
                   <span>
                     <span className="font-medium">

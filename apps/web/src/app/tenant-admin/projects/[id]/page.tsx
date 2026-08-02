@@ -17,6 +17,7 @@ import {
 import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { SowStatusBadge } from '@/components/shared/status-badge';
+import { Surface } from '@/components/shared/surface';
 import { ClientAccessPanel } from '@/components/tenant-admin/client-access-panel';
 import { ProjectMembersBoard } from '@/components/tenant-admin/project-members-board';
 import { getProject } from '@/lib/data/projects';
@@ -80,7 +81,7 @@ export default async function ProjectDetailPage({
         </TabsContent>
 
         <TabsContent value="sows">
-          <div className="rounded-md border">
+          <Surface>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -122,7 +123,7 @@ export default async function ProjectDetailPage({
                 )}
               </TableBody>
             </Table>
-          </div>
+          </Surface>
         </TabsContent>
 
         <TabsContent value="members">

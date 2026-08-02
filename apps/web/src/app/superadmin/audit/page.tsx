@@ -7,8 +7,10 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { Badge } from '@sow-platform/ui';
+import { EmptyState } from '@/components/shared/empty-state';
 import { PageHeader } from '@/components/shared/page-header';
 import { SectionEyebrow } from '@/components/shared/section-eyebrow';
+import { Surface } from '@/components/shared/surface';
 import { platformAuditEvents } from '@/lib/data/organizations';
 
 const eventMeta: Record<string, { icon: typeof Building2; className: string }> =
@@ -50,32 +52,34 @@ export default function PlatformAuditPage() {
             };
             const Icon = meta.icon;
             return (
-              <li
-                key={event.id}
-                className="flex items-start gap-3 rounded-lg border border-border p-3"
-              >
-                <span
-                  className={`flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent ${meta.className}`}
-                >
-                  <Icon className="size-4" />
-                </span>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{event.event}</Badge>
-                    <span className="text-sm font-medium">{event.detail}</span>
+              <li key={event.id} className="flex items-start gap-3">
+                <Surface contentClassName="flex items-start gap-3 p-3">
+                  <span
+                    className={`flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent ${meta.className}`}
+                  >
+                    <Icon className="size-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">{event.event}</Badge>
+                      <span className="text-sm font-medium">
+                        {event.detail}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {event.actor} · {event.timestamp}
+                    </div>
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {event.actor} · {event.timestamp}
-                  </div>
-                </div>
+                </Surface>
               </li>
             );
           })}
         </ol>
       ) : (
-        <div className="rounded-lg border py-8 text-center text-sm text-muted-foreground">
-          No platform-level events recorded yet.
-        </div>
+        <EmptyState
+          icon={ScrollText}
+          title="No platform-level events recorded yet"
+        />
       )}
     </div>
   );

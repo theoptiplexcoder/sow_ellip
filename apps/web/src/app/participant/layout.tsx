@@ -6,6 +6,7 @@ import {
   FileStack,
   FolderKanban,
   LayoutDashboard,
+  Workflow,
 } from 'lucide-react';
 import { AppShell, type NavItem } from '@/components/layout/app-shell';
 import { WorkflowsSidebarSection } from '@/components/participant/workflows-sidebar-section';
@@ -16,6 +17,7 @@ const navItems: NavItem[] = [
   { label: 'Projects', href: '/participant/projects', icon: FolderKanban },
   { label: 'My SOWs', href: '/participant/my-sows', icon: FileStack },
   { label: 'Approvals', href: '/participant/approvals', icon: CheckSquare },
+  { label: 'Workflows', href: '/participant/workflows', icon: Workflow },
   { label: 'Activity', href: '/participant/activity', icon: Activity },
 ];
 

@@ -32,6 +32,7 @@ import {
 import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { SowStatusBadge } from '@/components/shared/status-badge';
+import { Surface } from '@/components/shared/surface';
 import { getProject, type ProjectMember } from '@/lib/data/projects';
 import { getUser, type ProjectRole } from '@/lib/data/users';
 import { sows } from '@/lib/data/sows';
@@ -70,23 +71,25 @@ function MemberRow({ member }: { member: ProjectMember }) {
   const user = getUser(member.userId);
   if (!user) return null;
   return (
-    <li className="flex items-center gap-3 rounded-lg border p-3">
-      <Avatar>
-        <AvatarFallback className="text-xs">
-          {user.avatarInitials}
-        </AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{user.name}</p>
-        <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-      </div>
-      <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
-        {member.roles.map((role) => (
-          <Badge key={role} variant="outline" className="text-xs">
-            {roleLabel[role]}
-          </Badge>
-        ))}
-      </div>
+    <li>
+      <Surface contentClassName="flex items-center gap-3 p-3">
+        <Avatar>
+          <AvatarFallback className="text-xs">
+            {user.avatarInitials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{user.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+        </div>
+        <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+          {member.roles.map((role) => (
+            <Badge key={role} variant="outline" className="text-xs">
+              {roleLabel[role]}
+            </Badge>
+          ))}
+        </div>
+      </Surface>
     </li>
   );
 }
@@ -222,7 +225,7 @@ export default async function ParticipantProjectDetailPage({
         </TabsContent>
 
         <TabsContent value="sows" className="mt-4">
-          <div className="overflow-hidden rounded-lg border">
+          <Surface>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -260,7 +263,7 @@ export default async function ParticipantProjectDetailPage({
                 )}
               </TableBody>
             </Table>
-          </div>
+          </Surface>
         </TabsContent>
 
         <TabsContent value="members" className="mt-4">

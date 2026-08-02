@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Mail, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, Card, CardContent } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatusPill } from '@/components/shared/status-badge';
+import { Surface } from '@/components/shared/surface';
 import { OrganizationStatusAction } from '@/components/superadmin/organization-status-action';
 import { getOrganization } from '@/lib/data/organizations';
 
@@ -81,10 +82,13 @@ export default async function OrganizationDetailPage({
         </CardContent>
       </Card>
 
-      <p className="mt-8 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+      <Surface
+        className="mt-8 bg-muted/30"
+        contentClassName="p-4 text-sm text-muted-foreground"
+      >
         No SOW, template, or workflow content is visible here — Superadmin scope
         stops at tenant existence.
-      </p>
+      </Surface>
     </div>
   );
 }

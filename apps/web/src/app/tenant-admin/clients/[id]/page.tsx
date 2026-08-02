@@ -20,6 +20,7 @@ import {
 } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatusPill } from '@/components/shared/status-badge';
+import { Surface } from '@/components/shared/surface';
 import { getClient } from '@/lib/data/clients';
 import { projects } from '@/lib/data/projects';
 import { auditLogs } from '@/lib/data/audit-logs';
@@ -92,7 +93,7 @@ export default async function ClientDetailPage({
         </TabsContent>
 
         <TabsContent value="projects">
-          <div className="rounded-md border">
+          <Surface>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -124,7 +125,7 @@ export default async function ClientDetailPage({
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </Surface>
         </TabsContent>
 
         <TabsContent value="contacts">
@@ -153,15 +154,14 @@ export default async function ClientDetailPage({
         <TabsContent value="documents">
           <ul className="flex flex-col gap-2">
             {client.documents.map((doc) => (
-              <li
-                key={doc.id}
-                className="flex items-center gap-2 rounded-md border p-3 text-sm"
-              >
-                <FileText className="size-4 text-muted-foreground" />
-                <span className="font-medium">{doc.name}</span>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {doc.uploadedAt}
-                </span>
+              <li key={doc.id}>
+                <Surface contentClassName="flex items-center gap-2 p-3 text-sm">
+                  <FileText className="size-4 text-muted-foreground" />
+                  <span className="font-medium">{doc.name}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {doc.uploadedAt}
+                  </span>
+                </Surface>
               </li>
             ))}
             {client.documents.length === 0 && (
