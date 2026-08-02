@@ -43,7 +43,10 @@ export default function SowsListPage() {
         title="SOWs"
         description="All statements of work across the tenant."
         actions={
-          <Button>
+          <Button
+            nativeButton={false}
+            render={<Link href="/tenant-admin/sows/new" />}
+          >
             <Plus className="size-4" />
             Create
           </Button>

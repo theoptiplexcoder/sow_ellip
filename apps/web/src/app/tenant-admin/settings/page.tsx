@@ -24,7 +24,7 @@ export default function TenantSettingsPage() {
         description="Organization configuration for this tenant."
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Organization</CardTitle>
@@ -54,38 +54,40 @@ export default function TenantSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Users</CardTitle>
-            <CardDescription>
-              Manage tenant users and their status.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={<Link href="/tenant-admin/users" />}
-            >
-              Go to Users
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Users</CardTitle>
+              <CardDescription>
+                Manage tenant users and their status.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href="/tenant-admin/users" />}
+              >
+                Go to Users
+              </Button>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Storage</CardTitle>
-            <CardDescription>
-              Usage summary for attachments and generated documents.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            <Progress value={34} />
-            <p className="text-sm text-muted-foreground">
-              3.4 GB of 10 GB used
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Storage</CardTitle>
+              <CardDescription>
+                Usage summary for attachments and generated documents.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              <Progress value={34} />
+              <p className="text-sm text-muted-foreground">
+                3.4 GB of 10 GB used
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

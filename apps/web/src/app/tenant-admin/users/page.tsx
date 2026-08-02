@@ -1,6 +1,7 @@
 'use client';
 
-import { KeyRound, MoreVertical, Plus, UserX } from 'lucide-react';
+import { useState } from 'react';
+import { KeyRound, MoreVertical, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Avatar,
@@ -14,6 +15,7 @@ import {
 import { PageHeader } from '@/components/shared/page-header';
 import { DataList } from '@/components/shared/data-list';
 import { StatusPill } from '@/components/shared/status-badge';
+import { NewUserDialog } from '@/components/tenant-admin/new-user-dialog';
 import { users, type AppUser } from '@/lib/data/users';
 
 function UserActionsMenu({ user }: { user: AppUser }) {
@@ -51,21 +53,18 @@ function UserActionsMenu({ user }: { user: AppUser }) {
 }
 
 export default function UsersPage() {
+  const [userList, setUserList] = useState<AppUser[]>(users);
+
   return (
     <div>
       <PageHeader
         title="Users"
         description="Project-role assignment lives on each Project's Members tab, since roles are per-project."
-        actions={
-          <Button>
-            <Plus className="size-4" />
-            Invite User
-          </Button>
-        }
+        actions={<NewUserDialog onCreated={() => setUserList([...users])} />}
       />
 
       <DataList<AppUser>
-        data={users}
+        data={userList}
         getRowKey={(u) => u.id}
         emptyMessage="No users yet."
         columns={[

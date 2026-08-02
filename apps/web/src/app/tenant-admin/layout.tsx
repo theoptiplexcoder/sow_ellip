@@ -32,7 +32,6 @@ const navItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [
   { label: 'Organization', href: '/tenant-admin/settings', icon: Building2 },
-  { label: 'Profile', href: '/tenant-admin/settings', icon: Users },
 ];
 
 export default function TenantAdminLayout({

@@ -79,3 +79,22 @@ export const users: AppUser[] = [
 export function getUser(id: string) {
   return users.find((u) => u.id === id);
 }
+
+function initialsFor(name: string) {
+  const parts = name.trim().split(/\s+/);
+  const initials = (parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '');
+  return initials.slice(0, 2).toUpperCase();
+}
+
+export function createUser(input: { name: string; email: string }): AppUser {
+  const user: AppUser = {
+    id: `user-${Date.now()}`,
+    name: input.name,
+    email: input.email,
+    avatarInitials: initialsFor(input.name),
+    status: 'active',
+    projectCount: 0,
+  };
+  users.push(user);
+  return user;
+}

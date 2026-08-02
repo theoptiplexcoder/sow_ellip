@@ -70,7 +70,7 @@ export default function TemplatesPage() {
     <div>
       <PageHeader
         title="Templates"
-        description="One library, auto-sorted: documents with {{placeholders}} are Structured, documents without are plain DOCX."
+        description="One library, auto-sorted: documents with {{placeholders}} are Structured, documents without are plain DOCX. Editing a template never retroactively changes an already-generated SOW."
         actions={
           <NewTemplateButton
             onCreated={() => setTemplateList([...templates])}
@@ -151,16 +151,17 @@ export default function TemplatesPage() {
               <Card key={t.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base">
+                    <CardTitle className="min-w-0 text-base">
                       <Link
                         href={`/tenant-admin/templates/${t.id}`}
-                        className="hover:underline"
+                        className="block truncate hover:underline"
                       >
                         {t.name}
                       </Link>
                     </CardTitle>
                     <Badge
                       variant={t.status === 'active' ? 'default' : 'outline'}
+                      className="shrink-0"
                     >
                       {t.status}
                     </Badge>
@@ -227,14 +228,8 @@ export default function TemplatesPage() {
                     </AccordionItem>
                   </Accordion>
 
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Editing this template never retroactively changes an
-                    already-generated SOW.
-                  </p>
-
                   <div className="mt-4 flex flex-wrap items-center gap-2">
                     <Button
-                      variant="outline"
                       size="sm"
                       nativeButton={false}
                       render={<Link href={`/tenant-admin/templates/${t.id}`} />}
@@ -242,8 +237,6 @@ export default function TemplatesPage() {
                       <Pencil className="size-3.5" />
                       Edit in product
                     </Button>
-                  </div>
-                  <div className="mt-2">
                     <TemplateExportActions templateName={t.name} />
                   </div>
                 </CardContent>

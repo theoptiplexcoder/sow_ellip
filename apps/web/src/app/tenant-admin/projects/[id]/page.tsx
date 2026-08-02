@@ -1,12 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, ScrollText, User, Users } from 'lucide-react';
 import {
   Badge,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   Table,
   TableBody,
   TableCell,
@@ -19,6 +15,7 @@ import {
   TabsTrigger,
 } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
+import { StatCard } from '@/components/shared/stat-card';
 import { SowStatusBadge } from '@/components/shared/status-badge';
 import { ProjectMembersBoard } from '@/components/tenant-admin/project-members-board';
 import { getProject } from '@/lib/data/projects';
@@ -71,36 +68,13 @@ export default async function ProjectDetailPage({
         </TabsList>
 
         <TabsContent value="overview" className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">
-                Owner
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-lg font-medium">
-              {project.owner}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">
-                SOWs
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-semibold">
-              {project.sowCount}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">
-                Members
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-semibold">
-              {project.members.length}
-            </CardContent>
-          </Card>
+          <StatCard label="Owner" value={project.owner} icon={User} />
+          <StatCard label="SOWs" value={project.sowCount} icon={ScrollText} />
+          <StatCard
+            label="Members"
+            value={project.members.length}
+            icon={Users}
+          />
         </TabsContent>
 
         <TabsContent value="sows">
