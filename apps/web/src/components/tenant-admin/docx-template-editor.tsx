@@ -28,7 +28,12 @@ import {
   Underline,
 } from 'lucide-react';
 import { Badge, Button, Input, Separator, cn } from '@sow-platform/ui';
-import type { DocxSection } from '@/lib/data/templates';
+
+interface DocxSection {
+  id: string;
+  placeholder: string;
+  content: string;
+}
 
 function ToolbarButton({
   icon: Icon,

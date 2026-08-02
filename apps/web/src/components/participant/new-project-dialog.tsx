@@ -77,7 +77,10 @@ export function NewProjectDialog() {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="project-client">Client</Label>
-            <Select value={clientId} onValueChange={setClientId}>
+            <Select
+              value={clientId}
+              onValueChange={(value) => setClientId(value ?? '')}
+            >
               <SelectTrigger id="project-client">
                 <SelectValue placeholder="Select a client" />
               </SelectTrigger>

@@ -203,7 +203,10 @@ export default function NewSowPage() {
             <div className="max-w-sm">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="sow-project">Project</Label>
-                <Select value={projectId} onValueChange={setProjectId}>
+                <Select
+                  value={projectId}
+                  onValueChange={(value) => setProjectId(value ?? '')}
+                >
                   <SelectTrigger id="sow-project">
                     <SelectValue placeholder="Select a project" />
                   </SelectTrigger>
