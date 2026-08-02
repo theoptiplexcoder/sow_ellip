@@ -78,6 +78,32 @@ export function getOrganization(id: string) {
   return organizations.find((o) => o.id === id);
 }
 
+export function createOrganization(input: {
+  name: string;
+  slug: string;
+  tenantAdminName: string;
+  tenantAdminEmail: string;
+}): Organization {
+  const organization: Organization = {
+    id: `org-${Date.now()}`,
+    name: input.name,
+    slug: input.slug,
+    tenantAdminName: input.tenantAdminName,
+    tenantAdminEmail: input.tenantAdminEmail,
+    userCount: 0,
+    createdAt: new Date().toISOString().slice(0, 10),
+    status: 'active',
+  };
+  organizations.push(organization);
+  return organization;
+}
+
+export function setOrganizationStatus(id: string, status: OrganizationStatus) {
+  const organization = getOrganization(id);
+  if (!organization) return;
+  organization.status = status;
+}
+
 export const organizationGrowth = [
   { month: 'Feb', organizations: 1 },
   { month: 'Mar', organizations: 2 },

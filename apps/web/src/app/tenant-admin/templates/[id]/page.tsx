@@ -43,7 +43,7 @@ export default async function TemplateDetailPage({
       />
 
       <div className="mb-6">
-        <TemplateExportActions templateName={template.name} />
+        <TemplateExportActions template={template} />
       </div>
 
       <DocxEditorTemplateEditor

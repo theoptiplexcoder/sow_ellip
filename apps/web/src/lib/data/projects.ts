@@ -124,6 +124,15 @@ export function getProject(id: string) {
   return projects.find((p) => p.id === id);
 }
 
+export function updateProjectMembers(
+  projectId: string,
+  members: ProjectMember[],
+) {
+  const project = getProject(projectId);
+  if (!project) return;
+  project.members = members;
+}
+
 export function getProjectsForUser(userId: string, role?: ProjectRole) {
   return projects.filter((p) =>
     p.members.some(

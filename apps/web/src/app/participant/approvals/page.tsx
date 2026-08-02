@@ -6,6 +6,7 @@ import { DataList } from '@/components/shared/data-list';
 import { currentUsers } from '@/lib/data/current-user';
 import { getProjectsForUser } from '@/lib/data/projects';
 import { sows, type Sow } from '@/lib/data/sows';
+import { averageReviewDays } from '@/lib/sow-metrics';
 import { CheckCircle2, Clock, Inbox, XCircle } from 'lucide-react';
 
 export default function ApprovalsPage() {
@@ -17,6 +18,7 @@ export default function ApprovalsPage() {
   const pending = approverSows.filter((s) => s.status === 'in_review');
   const approved = approverSows.filter((s) => s.status === 'approved');
   const rejected = approverSows.filter((s) => s.status === 'rejected');
+  const avgReviewDays = averageReviewDays(approverSows);
 
   return (
     <div>
@@ -33,7 +35,12 @@ export default function ApprovalsPage() {
           icon={CheckCircle2}
         />
         <StatCard label="Rejected" value={rejected.length} icon={XCircle} />
-        <StatCard label="Average Review Time" value="1.4 days" />
+        <StatCard
+          label="Average Review Time"
+          value={
+            avgReviewDays === null ? '—' : `${avgReviewDays.toFixed(1)} days`
+          }
+        />
       </div>
 
       <h2 className="mt-8 mb-3 font-display text-lg font-semibold tracking-tight">

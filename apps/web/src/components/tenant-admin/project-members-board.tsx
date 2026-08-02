@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   DndContext,
   type DragEndEvent,
@@ -21,7 +21,7 @@ import {
   CardTitle,
   cn,
 } from '@sow-platform/ui';
-import type { ProjectMember } from '@/lib/data/projects';
+import { updateProjectMembers, type ProjectMember } from '@/lib/data/projects';
 import {
   type AppUser,
   type ProjectRole,
@@ -98,8 +98,10 @@ function DropZone({
 }
 
 export function ProjectMembersBoard({
+  projectId,
   members: initialMembers,
 }: {
+  projectId: string;
   members: ProjectMember[];
 }) {
   const [memberIds, setMemberIds] = useState<string[]>(
@@ -108,6 +110,13 @@ export function ProjectMembersBoard({
   const [roles, setRoles] = useState<Record<string, ProjectRole[]>>(
     Object.fromEntries(initialMembers.map((m) => [m.userId, m.roles])),
   );
+
+  useEffect(() => {
+    updateProjectMembers(
+      projectId,
+      memberIds.map((userId) => ({ userId, roles: roles[userId] ?? [] })),
+    );
+  }, [projectId, memberIds, roles]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),

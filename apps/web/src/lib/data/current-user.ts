@@ -1,9 +1,15 @@
 export type Persona = 'superadmin' | 'tenant_admin' | 'participant';
 
-export const currentTenant = {
+export const currentTenant: { name: string; slug: string; logoUrl: string } = {
   name: 'Northwind Consulting',
   slug: 'northwind-consulting',
+  logoUrl: '',
 };
+
+export function updateCurrentTenant(patch: { name: string; logoUrl: string }) {
+  currentTenant.name = patch.name;
+  currentTenant.logoUrl = patch.logoUrl;
+}
 
 export const currentUsers: Record<
   Persona,

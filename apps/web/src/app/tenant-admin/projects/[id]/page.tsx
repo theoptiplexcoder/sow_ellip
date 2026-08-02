@@ -128,7 +128,10 @@ export default async function ProjectDetailPage({
             Drag users between lists to assign them to this project, then toggle
             their project role(s). A user can hold multiple role chips at once.
           </p>
-          <ProjectMembersBoard members={project.members} />
+          <ProjectMembersBoard
+            projectId={project.id}
+            members={project.members}
+          />
         </TabsContent>
 
         <TabsContent value="workflow">

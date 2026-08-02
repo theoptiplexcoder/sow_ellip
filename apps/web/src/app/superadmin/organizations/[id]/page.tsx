@@ -1,24 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Calendar, ShieldCheck, User, Users } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@sow-platform/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatusPill } from '@/components/shared/status-badge';
+import { OrganizationStatusAction } from '@/components/superadmin/organization-status-action';
 import { getOrganization } from '@/lib/data/organizations';
 
 export default async function OrganizationDetailPage({
@@ -41,35 +27,7 @@ export default async function OrganizationDetailPage({
       <PageHeader
         title={org.name}
         description={`/${org.slug}`}
-        actions={
-          <AlertDialog>
-            <AlertDialogTrigger
-              render={
-                <Button
-                  variant={org.status === 'active' ? 'destructive' : 'default'}
-                />
-              }
-            >
-              {org.status === 'active' ? 'Disable' : 'Enable'} Organization
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {org.status === 'active' ? 'Disable' : 'Enable'} {org.name}?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {org.status === 'active'
-                    ? 'Tenant Admin and all Participants will immediately lose access to the platform.'
-                    : 'This will restore platform access for this organization.'}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction>Confirm</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        }
+        actions={<OrganizationStatusAction organization={org} />}
       />
 
       <h2 className="mb-4 font-display text-lg font-semibold tracking-tight">

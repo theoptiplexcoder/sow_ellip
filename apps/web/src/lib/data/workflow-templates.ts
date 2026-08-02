@@ -133,3 +133,10 @@ export function updateWorkflowTemplateStatus(
   template.status = status;
   template.updatedAt = new Date().toISOString().slice(0, 10);
 }
+
+export function updateWorkflowTemplateSteps(id: string, steps: WorkflowStep[]) {
+  const template = getWorkflowTemplate(id);
+  if (!template) return;
+  template.steps = steps;
+  template.updatedAt = new Date().toISOString().slice(0, 10);
+}

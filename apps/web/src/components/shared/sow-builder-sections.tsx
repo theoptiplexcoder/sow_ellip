@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Input, Label, Textarea, cn } from '@sow-platform/ui';
 import type { Sow } from '@/lib/data/sows';
 import { DocxRichTextField } from './docx-rich-text-field';
@@ -20,8 +20,19 @@ const sections = [
 
 type Section = (typeof sections)[number];
 
-export function SowBuilderSections({ sow }: { sow: Sow }) {
+export function SowBuilderSections({
+  sow,
+  onDraftChange,
+}: {
+  sow: Sow;
+  onDraftChange?: (sections: Sow['sections']) => void;
+}) {
   const [active, setActive] = useState<Section>('Objectives');
+  const [draft, setDraft] = useState<Sow['sections']>(sow.sections);
+
+  useEffect(() => {
+    onDraftChange?.(draft);
+  }, [draft]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[200px_1fr]">
@@ -47,7 +58,10 @@ export function SowBuilderSections({ sow }: { sow: Sow }) {
           <div className="flex flex-col gap-2">
             <Label>Objectives</Label>
             <Textarea
-              defaultValue={sow.sections.objectives}
+              value={draft.objectives}
+              onChange={(
+                e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+              ) => setDraft((d) => ({ ...d, objectives: e.target.value }))}
               className="min-h-32"
             />
           </div>
@@ -61,8 +75,23 @@ export function SowBuilderSections({ sow }: { sow: Sow }) {
           <div className="flex flex-col gap-2">
             <Label>Deliverables</Label>
             <ul className="flex flex-col gap-2">
-              {sow.sections.deliverables.map((d, i) => (
-                <Input key={i} defaultValue={d} />
+              {draft.deliverables.map((d, i) => (
+                <Input
+                  key={i}
+                  value={d}
+                  onChange={(
+                    e: React.ChangeEvent<
+                      HTMLInputElement | HTMLTextAreaElement
+                    >,
+                  ) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      deliverables: prev.deliverables.map((item, idx) =>
+                        idx === i ? e.target.value : item,
+                      ),
+                    }))
+                  }
+                />
               ))}
             </ul>
           </div>
@@ -71,10 +100,40 @@ export function SowBuilderSections({ sow }: { sow: Sow }) {
         {active === 'Milestones' && (
           <div className="flex flex-col gap-3">
             <Label>Milestones</Label>
-            {sow.sections.milestones.map((m, i) => (
+            {draft.milestones.map((m, i) => (
               <div key={i} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Input defaultValue={m.name} placeholder="Milestone name" />
-                <Input defaultValue={m.dueDate} type="date" />
+                <Input
+                  value={m.name}
+                  placeholder="Milestone name"
+                  onChange={(
+                    e: React.ChangeEvent<
+                      HTMLInputElement | HTMLTextAreaElement
+                    >,
+                  ) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      milestones: prev.milestones.map((item, idx) =>
+                        idx === i ? { ...item, name: e.target.value } : item,
+                      ),
+                    }))
+                  }
+                />
+                <Input
+                  value={m.dueDate}
+                  type="date"
+                  onChange={(
+                    e: React.ChangeEvent<
+                      HTMLInputElement | HTMLTextAreaElement
+                    >,
+                  ) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      milestones: prev.milestones.map((item, idx) =>
+                        idx === i ? { ...item, dueDate: e.target.value } : item,
+                      ),
+                    }))
+                  }
+                />
               </div>
             ))}
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 pt-2">
@@ -82,13 +141,29 @@ export function SowBuilderSections({ sow }: { sow: Sow }) {
                 <Label className="text-xs text-muted-foreground">
                   Period of Performance — Start
                 </Label>
-                <Input defaultValue={sow.sections.periodStart} type="date" />
+                <Input
+                  value={draft.periodStart}
+                  type="date"
+                  onChange={(
+                    e: React.ChangeEvent<
+                      HTMLInputElement | HTMLTextAreaElement
+                    >,
+                  ) => setDraft((d) => ({ ...d, periodStart: e.target.value }))}
+                />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs text-muted-foreground">
                   Period of Performance — End
                 </Label>
-                <Input defaultValue={sow.sections.periodEnd} type="date" />
+                <Input
+                  value={draft.periodEnd}
+                  type="date"
+                  onChange={(
+                    e: React.ChangeEvent<
+                      HTMLInputElement | HTMLTextAreaElement
+                    >,
+                  ) => setDraft((d) => ({ ...d, periodEnd: e.target.value }))}
+                />
               </div>
             </div>
           </div>
@@ -97,10 +172,38 @@ export function SowBuilderSections({ sow }: { sow: Sow }) {
         {active === 'Pricing' && (
           <div className="flex flex-col gap-2">
             <Label>Pricing</Label>
-            {sow.sections.pricing.map((p, i) => (
+            {draft.pricing.map((p, i) => (
               <div key={i} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Input defaultValue={p.item} />
-                <Input defaultValue={p.amount} />
+                <Input
+                  value={p.item}
+                  onChange={(
+                    e: React.ChangeEvent<
+                      HTMLInputElement | HTMLTextAreaElement
+                    >,
+                  ) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      pricing: prev.pricing.map((item, idx) =>
+                        idx === i ? { ...item, item: e.target.value } : item,
+                      ),
+                    }))
+                  }
+                />
+                <Input
+                  value={p.amount}
+                  onChange={(
+                    e: React.ChangeEvent<
+                      HTMLInputElement | HTMLTextAreaElement
+                    >,
+                  ) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      pricing: prev.pricing.map((item, idx) =>
+                        idx === i ? { ...item, amount: e.target.value } : item,
+                      ),
+                    }))
+                  }
+                />
               </div>
             ))}
           </div>
@@ -110,7 +213,12 @@ export function SowBuilderSections({ sow }: { sow: Sow }) {
           <div className="flex flex-col gap-2">
             <Label>Acceptance Criteria</Label>
             <Textarea
-              defaultValue={sow.sections.acceptanceCriteria}
+              value={draft.acceptanceCriteria}
+              onChange={(
+                e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+              ) =>
+                setDraft((d) => ({ ...d, acceptanceCriteria: e.target.value }))
+              }
               className="min-h-32"
             />
           </div>
@@ -120,7 +228,10 @@ export function SowBuilderSections({ sow }: { sow: Sow }) {
           <div className="flex flex-col gap-2">
             <Label>Dependencies</Label>
             <Textarea
-              defaultValue={sow.sections.dependencies}
+              value={draft.dependencies}
+              onChange={(
+                e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+              ) => setDraft((d) => ({ ...d, dependencies: e.target.value }))}
               className="min-h-32"
             />
           </div>
@@ -129,7 +240,13 @@ export function SowBuilderSections({ sow }: { sow: Sow }) {
         {active === 'Risks' && (
           <div className="flex flex-col gap-2">
             <Label>Risks</Label>
-            <Textarea defaultValue={sow.sections.risks} className="min-h-32" />
+            <Textarea
+              value={draft.risks}
+              onChange={(
+                e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+              ) => setDraft((d) => ({ ...d, risks: e.target.value }))}
+              className="min-h-32"
+            />
           </div>
         )}
 

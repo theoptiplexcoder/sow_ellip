@@ -18,6 +18,7 @@ import {
   cn,
 } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
+import { StatusPill } from '@/components/shared/status-badge';
 import { NewTemplateButton } from '@/components/tenant-admin/new-template-button';
 import { TemplateExportActions } from '@/components/tenant-admin/template-export-actions';
 import {
@@ -148,7 +149,10 @@ export default function TemplatesPage() {
           {visible.map((t) => {
             const structured = hasPlaceholders(t);
             return (
-              <Card key={t.id}>
+              <Card
+                key={t.id}
+                className="gap-3 transition-shadow hover:shadow-md"
+              >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="min-w-0 text-base">
@@ -159,27 +163,24 @@ export default function TemplatesPage() {
                         {t.name}
                       </Link>
                     </CardTitle>
-                    <Badge
-                      variant={t.status === 'active' ? 'default' : 'outline'}
-                      className="shrink-0"
-                    >
-                      {t.status}
-                    </Badge>
+                    <StatusPill
+                      active={t.status === 'active'}
+                      activeLabel="Active"
+                      inactiveLabel="Archived"
+                    />
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
-                    <Badge
-                      variant={structured ? 'default' : 'secondary'}
-                      className="gap-1"
-                    >
+                    <span className="inline-flex items-center gap-1 font-medium text-foreground">
                       {structured ? (
-                        <Layers className="size-3" />
+                        <Layers className="size-3.5" />
                       ) : (
-                        <FileText className="size-3" />
+                        <FileText className="size-3.5" />
                       )}
                       {structured ? 'Structured' : 'DOCX'}
-                    </Badge>
+                    </span>
+                    <span aria-hidden>·</span>
                     <span>
                       v{t.version} · updated {t.updatedAt}
                     </span>
@@ -237,7 +238,7 @@ export default function TemplatesPage() {
                       <Pencil className="size-3.5" />
                       Edit in product
                     </Button>
-                    <TemplateExportActions templateName={t.name} />
+                    <TemplateExportActions template={t} />
                   </div>
                 </CardContent>
               </Card>

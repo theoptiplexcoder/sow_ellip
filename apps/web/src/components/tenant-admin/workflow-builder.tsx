@@ -6,8 +6,10 @@ import { WorkflowStepList } from '@/components/tenant-admin/workflow-step-list';
 import { WorkflowFlowDiagram } from '@/components/tenant-admin/workflow-flow-diagram';
 
 export function WorkflowBuilder({
+  templateId,
   steps: initialSteps,
 }: {
+  templateId: string;
   steps: WorkflowStep[];
 }) {
   const [steps, setSteps] = useState(initialSteps);
@@ -15,7 +17,11 @@ export function WorkflowBuilder({
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div>
-        <WorkflowStepList steps={initialSteps} onStepsChange={setSteps} />
+        <WorkflowStepList
+          templateId={templateId}
+          steps={initialSteps}
+          onStepsChange={setSteps}
+        />
       </div>
       <div className="lg:sticky lg:top-6 lg:self-start">
         <WorkflowFlowDiagram steps={steps} />

@@ -98,3 +98,9 @@ export function createUser(input: { name: string; email: string }): AppUser {
   users.push(user);
   return user;
 }
+
+export function deactivateUser(id: string) {
+  const user = getUser(id);
+  if (!user) return;
+  user.status = 'inactive';
+}

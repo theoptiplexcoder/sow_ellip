@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -19,17 +20,24 @@ import {
   Textarea,
 } from '@sow-platform/ui';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { currentUsers } from '@/lib/data/current-user';
+import { decideSow, type Sow } from '@/lib/data/sows';
 
-export function ApproverDecisionPanel() {
+export function ApproverDecisionPanel({ sow }: { sow: Sow }) {
+  const router = useRouter();
   const [comment, setComment] = useState('');
   const [pendingAction, setPendingAction] = useState<'reject' | null>(null);
 
   function submitDecision(kind: 'approve' | 'reject') {
     if (kind === 'reject' && comment.trim() === '') return;
-    const message = kind === 'approve' ? 'SOW approved' : 'SOW rejected';
-    toast.success(message);
+    decideSow(sow.id, kind === 'approve' ? 'approved' : 'rejected', {
+      actor: currentUsers.participant.name,
+      comment: comment.trim() || undefined,
+    });
+    toast.success(kind === 'approve' ? 'SOW approved' : 'SOW rejected');
     setPendingAction(null);
     setComment('');
+    router.refresh();
   }
 
   return (

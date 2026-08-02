@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   DndContext,
@@ -40,9 +41,10 @@ import {
   Separator,
   cn,
 } from '@sow-platform/ui';
-import type {
-  ApprovalLogic,
-  WorkflowStep,
+import {
+  updateWorkflowTemplateSteps,
+  type ApprovalLogic,
+  type WorkflowStep,
 } from '@/lib/data/workflow-templates';
 import { getUser, users } from '@/lib/data/users';
 
@@ -295,12 +297,15 @@ function SortableStep({
 }
 
 export function WorkflowStepList({
+  templateId,
   steps: initialSteps,
   onStepsChange,
 }: {
+  templateId: string;
   steps: WorkflowStep[];
   onStepsChange?: (steps: WorkflowStep[]) => void;
 }) {
+  const router = useRouter();
   const [steps, setSteps] = useState(initialSteps);
   const [addOpen, setAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -335,7 +340,7 @@ export function WorkflowStepList({
         approvalLogic: value.approvalLogic,
       },
     ]);
-    toast.success('Step added (prototype only — not persisted)');
+    toast.success('Step added — click Save Workflow to persist');
   }
 
   function editStep(id: string, value: StepFormValue) {
@@ -351,12 +356,12 @@ export function WorkflowStepList({
           : s,
       ),
     );
-    toast.success('Step updated (prototype only — not persisted)');
+    toast.success('Step updated — click Save Workflow to persist');
   }
 
   function deleteStep(id: string) {
     setSteps((prev) => prev.filter((s) => s.id !== id));
-    toast.success('Step removed (prototype only — not persisted)');
+    toast.success('Step removed — click Save Workflow to persist');
   }
 
   return (
@@ -403,9 +408,11 @@ export function WorkflowStepList({
       <div className="mt-6 flex justify-end">
         <Button
           variant="outline"
-          onClick={() =>
-            toast.success('Workflow saved (prototype only — not persisted)')
-          }
+          onClick={() => {
+            updateWorkflowTemplateSteps(templateId, steps);
+            toast.success('Workflow saved');
+            router.refresh();
+          }}
         >
           Save Workflow
         </Button>

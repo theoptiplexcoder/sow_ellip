@@ -423,6 +423,59 @@ export function createSow(input: {
   return sow;
 }
 
+export function updateSow(
+  id: string,
+  patch: Partial<Pick<Sow, 'title' | 'sections' | 'documentHtml'>>,
+) {
+  const sow = getSow(id);
+  if (!sow) return;
+  Object.assign(sow, patch);
+  sow.updatedAt = new Date().toISOString().slice(0, 10);
+}
+
+export function submitSowForApproval(id: string) {
+  const sow = getSow(id);
+  if (!sow) return;
+  const today = new Date().toISOString().slice(0, 10);
+  sow.status = 'in_review';
+  sow.updatedAt = today;
+  const latestRevision = sow.revisions[sow.revisions.length - 1];
+  if (latestRevision) {
+    latestRevision.submittedAt = today;
+    latestRevision.status = 'in_review';
+  }
+}
+
+export function decideSow(
+  id: string,
+  decision: 'approved' | 'rejected' | 'changes_requested',
+  input: { actor: string; comment?: string },
+) {
+  const sow = getSow(id);
+  if (!sow) return;
+  const now = new Date();
+  const timestamp = `${now.toISOString().slice(0, 10)} ${now.toTimeString().slice(0, 5)}`;
+  sow.status = decision;
+  sow.updatedAt = now.toISOString().slice(0, 10);
+  const latestRevision = sow.revisions[sow.revisions.length - 1];
+  if (latestRevision) {
+    latestRevision.status = decision;
+    latestRevision.workflowInstanceSteps.push({
+      id: `wis-${Date.now()}`,
+      name:
+        decision === 'approved'
+          ? 'Approval'
+          : decision === 'rejected'
+            ? 'Rejection'
+            : 'Changes Requested',
+      actor: input.actor,
+      status: decision,
+      comment: input.comment,
+      decidedAt: timestamp,
+    });
+  }
+}
+
 export const sowStatusLabels: Record<SowStatus, string> = {
   draft: 'Draft',
   submitted: 'Submitted',

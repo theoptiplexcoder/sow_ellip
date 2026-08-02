@@ -51,7 +51,7 @@ export default async function ApproverScreenPage({
         </div>
 
         <div className="order-1 flex flex-col gap-6 lg:order-2">
-          <ApproverDecisionPanel />
+          <ApproverDecisionPanel sow={sow} />
           <Card>
             <CardHeader>
               <CardTitle className="text-base">

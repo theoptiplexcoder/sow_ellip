@@ -16,9 +16,15 @@ import { PageHeader } from '@/components/shared/page-header';
 import { DataList } from '@/components/shared/data-list';
 import { StatusPill } from '@/components/shared/status-badge';
 import { NewUserDialog } from '@/components/tenant-admin/new-user-dialog';
-import { users, type AppUser } from '@/lib/data/users';
+import { deactivateUser, users, type AppUser } from '@/lib/data/users';
 
-function UserActionsMenu({ user }: { user: AppUser }) {
+function UserActionsMenu({
+  user,
+  onDeactivated,
+}: {
+  user: AppUser;
+  onDeactivated: () => void;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -42,7 +48,12 @@ function UserActionsMenu({ user }: { user: AppUser }) {
         </DropdownMenuItem>
         <DropdownMenuItem
           variant="destructive"
-          onClick={() => toast.success(`${user.name} deactivated`)}
+          disabled={user.status === 'inactive'}
+          onClick={() => {
+            deactivateUser(user.id);
+            toast.success(`${user.name} deactivated`);
+            onDeactivated();
+          }}
         >
           <UserX className="size-4" />
           Deactivate
@@ -90,7 +101,12 @@ export default function UsersPage() {
           {
             header: 'Actions',
             className: 'text-right',
-            cell: (u) => <UserActionsMenu user={u} />,
+            cell: (u) => (
+              <UserActionsMenu
+                user={u}
+                onDeactivated={() => setUserList([...users])}
+              />
+            ),
           },
         ]}
         renderCard={(u) => (
@@ -106,7 +122,10 @@ export default function UsersPage() {
                     {u.email}
                   </div>
                 </div>
-                <UserActionsMenu user={u} />
+                <UserActionsMenu
+                  user={u}
+                  onDeactivated={() => setUserList([...users])}
+                />
               </div>
               <div className="mt-2 flex items-center gap-2">
                 <StatusPill active={u.status === 'active'} />

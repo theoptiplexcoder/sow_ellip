@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
@@ -14,9 +15,17 @@ import {
   Progress,
 } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
-import { currentTenant } from '@/lib/data/current-user';
+import { currentTenant, updateCurrentTenant } from '@/lib/data/current-user';
 
 export default function TenantSettingsPage() {
+  const [name, setName] = useState(currentTenant.name);
+  const [logoUrl, setLogoUrl] = useState(currentTenant.logoUrl);
+
+  function handleSave() {
+    updateCurrentTenant({ name: name.trim(), logoUrl: logoUrl.trim() });
+    toast.success('Organization settings saved');
+  }
+
   return (
     <div>
       <PageHeader
@@ -29,13 +38,19 @@ export default function TenantSettingsPage() {
           <CardHeader>
             <CardTitle>Organization</CardTitle>
             <CardDescription>
-              Name, branding, and theme for {currentTenant.name}.
+              Name, branding, and theme for {name}.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="org-name">Organization name</Label>
-              <Input id="org-name" defaultValue={currentTenant.name} />
+              <Input
+                id="org-name"
+                value={name}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setName(e.target.value)
+                }
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="org-slug">Slug</Label>
@@ -43,12 +58,16 @@ export default function TenantSettingsPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="org-logo">Logo URL</Label>
-              <Input id="org-logo" placeholder="https://..." />
+              <Input
+                id="org-logo"
+                placeholder="https://..."
+                value={logoUrl}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setLogoUrl(e.target.value)
+                }
+              />
             </div>
-            <Button
-              className="self-start"
-              onClick={() => toast.success('Organization settings saved')}
-            >
+            <Button className="self-start" onClick={handleSave}>
               Save Changes
             </Button>
           </CardContent>

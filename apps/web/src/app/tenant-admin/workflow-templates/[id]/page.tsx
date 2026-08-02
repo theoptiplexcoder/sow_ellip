@@ -39,7 +39,7 @@ export default async function WorkflowTemplateDetailPage({
         }
       />
 
-      <WorkflowBuilder steps={wf.steps} />
+      <WorkflowBuilder templateId={wf.id} steps={wf.steps} />
     </div>
   );
 }

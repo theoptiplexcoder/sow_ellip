@@ -1,5 +1,8 @@
 'use client';
 
+import { useRef } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Alert,
@@ -33,7 +36,7 @@ import { SowExportActions } from '@/components/shared/sow-export-actions';
 import { SowStateStrip } from '@/components/shared/sow-state-strip';
 import { SowStatusBadge } from '@/components/shared/status-badge';
 import { WorkflowTimeline } from '@/components/shared/workflow-timeline';
-import type { Sow } from '@/lib/data/sows';
+import { type Sow, submitSowForApproval, updateSow } from '@/lib/data/sows';
 import { auditLogs } from '@/lib/data/audit-logs';
 
 export function SowDetailTabs({
@@ -45,10 +48,24 @@ export function SowDetailTabs({
   variant: 'tenant-admin' | 'creator';
   showConflictBanner?: boolean;
 }) {
+  const router = useRouter();
+  const draftRef = useRef(sow.sections);
   const latestRevision = sow.revisions[sow.revisions.length - 1];
   const relatedAudit = auditLogs.filter(
     (a) => a.entityName.includes(sow.number) || a.entityType === 'SOW',
   );
+
+  function handleSaveDraft() {
+    updateSow(sow.id, { sections: draftRef.current });
+    toast.success('Draft saved');
+    router.refresh();
+  }
+
+  function handleSubmitForApproval() {
+    submitSowForApproval(sow.id);
+    toast.success('Submitted for approval');
+    router.refresh();
+  }
 
   return (
     <Tabs defaultValue="overview">
@@ -117,31 +134,33 @@ export function SowDetailTabs({
           <SowStateStrip status={sow.status} />
           <SowExportActions sowId={sow.id} />
         </div>
-        <SowBuilderSections sow={sow} />
+        <SowBuilderSections
+          sow={sow}
+          onDraftChange={(next) => {
+            draftRef.current = next;
+          }}
+        />
         <div className="mt-4 flex flex-wrap justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => toast.success('Draft saved')}
-          >
+          <Button variant="outline" onClick={handleSaveDraft}>
             Save Draft
           </Button>
           <Button
             variant="outline"
-            onClick={() => toast.info('Preview opened in new tab (prototype)')}
+            nativeButton={false}
+            render={<Link href={`/sows/${sow.id}/print`} target="_blank" />}
           >
             Preview
           </Button>
           {variant === 'tenant-admin' && (
             <Button
               variant="outline"
-              onClick={() => toast.info('Generate from template (prototype)')}
+              nativeButton={false}
+              render={<Link href="/tenant-admin/templates" />}
             >
               Generate from Template
             </Button>
           )}
-          <Button onClick={() => toast.success('Submitted for approval')}>
-            Submit for Approval
-          </Button>
+          <Button onClick={handleSubmitForApproval}>Submit for Approval</Button>
         </div>
       </TabsContent>
 

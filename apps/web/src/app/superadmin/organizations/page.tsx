@@ -19,9 +19,11 @@ import { organizations, type Organization } from '@/lib/data/organizations';
 export default function OrganizationsPage() {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<'all' | 'active' | 'disabled'>('all');
+  const [organizationList, setOrganizationList] =
+    useState<Organization[]>(organizations);
 
   const filtered = useMemo(() => {
-    return organizations.filter((org) => {
+    return organizationList.filter((org) => {
       const matchesQuery =
         query.trim() === '' ||
         org.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -29,14 +31,18 @@ export default function OrganizationsPage() {
       const matchesStatus = status === 'all' || org.status === status;
       return matchesQuery && matchesStatus;
     });
-  }, [query, status]);
+  }, [query, status, organizationList]);
 
   return (
     <div>
       <PageHeader
         title="Organizations"
         description="Every tenant on the platform. Superadmin scope stops at tenant existence."
-        actions={<CreateOrganizationDialog />}
+        actions={
+          <CreateOrganizationDialog
+            onCreated={() => setOrganizationList([...organizations])}
+          />
+        }
       />
 
       <h2 className="mb-4 font-display text-lg font-semibold tracking-tight">
