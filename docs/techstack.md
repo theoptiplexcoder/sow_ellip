@@ -16,6 +16,8 @@ Before adopting the expanded proposal wholesale, four points needed reconciling 
 
 Everything else in the proposal (Prisma, docx-editor.dev/RJSF/dnd-kit, TanStack Table/Query, Zustand, Recharts, Pino, Sentry, Vitest/Testing Library/Playwright, pnpm, GitHub Actions) is additive detail that doesn't conflict with the PRD and has been folded in below.
 
+5. **Client persona and agentic editing are new since PRD v1.1/v1.0.** Neither appears in the original proposal or the earlier PRD revision. Client access reuses the existing Better Auth session model and permission-based RBAC (§4) rather than introducing new auth machinery. Agentic editing is folded in as a new §5a, deliberately designed so the agent's only path into a document is the same permission-checked, tenant-scoped mutation path a human editor already uses — it's additive to the stack, not a parallel privileged path.
+
 ---
 
 ## 1. Application Layer
@@ -53,6 +55,7 @@ libs/
   dashboard/            # Role-tailored dashboards
   validation/           # Shared Zod schemas
   ui/                   # Shared UI components (shadcn/ui-based)
+  ai/                   # Provider-agnostic AI agent orchestrator (see §5a)
   shared/               # Cross-cutting utilities/types
 
 prisma/
@@ -67,20 +70,19 @@ prisma/
 
 ## 2. Styling & UI
 
-| Component                | Choice                                                           | Why                                                                                                                                                         |
-| ------------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Styling                  | **Tailwind CSS v4**                                              | Fast, utility-first UI development                                                                                                                          |
-| Component library        | **shadcn/ui**                                                    | Accessible, customizable, not overly opinionated                                                                                                            |
-| Primitives               | **Radix UI**                                                     | Accessibility foundation used by shadcn/ui                                                                                                                  |
-| Icons                    | **Lucide React**                                                 | Lightweight, consistent icon set                                                                                                                            |
-| Forms                    | **React Hook Form**                                              | High-performance form state                                                                                                                                 |
-| Validation               | **Zod**                                                          | Shared client/server validation, also feeds OpenAPI generation                                                                                              |
-| Tables                   | **TanStack Table**                                               | Sorting, filtering, pagination, virtualization — for SOW lists, users, clients, audit logs                                                                  |
-| Drag & drop              | **dnd-kit**                                                      | Reordering workflow steps and structured-form fields                                                                                                        |
-| Charts                   | **Recharts**                                                     | Dashboard visuals: approval counts, status breakdowns, workflow duration                                                                                    |
-| Workflow diagram preview | **@xyflow/react** (React Flow)                                   | Read-only node/edge diagram rendering of a workflow template's ordered steps, so Tenant Admins can visually preview the approval sequence while building it |
-| Client state             | **TanStack Query** (server cache) + **Zustand** (local UI state) | Avoids Redux; clear split between server-derived and UI-only state                                                                                          |
-| Dates                    | **date-fns**                                                     | Avoid Moment.js                                                                                                                                             |
+| Component         | Choice                                                           | Why                                                                                        |
+| ----------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Styling           | **Tailwind CSS v4**                                              | Fast, utility-first UI development                                                         |
+| Component library | **shadcn/ui**                                                    | Accessible, customizable, not overly opinionated                                           |
+| Primitives        | **Radix UI**                                                     | Accessibility foundation used by shadcn/ui                                                 |
+| Icons             | **Lucide React**                                                 | Lightweight, consistent icon set                                                           |
+| Forms             | **React Hook Form**                                              | High-performance form state                                                                |
+| Validation        | **Zod**                                                          | Shared client/server validation, also feeds OpenAPI generation                             |
+| Tables            | **TanStack Table**                                               | Sorting, filtering, pagination, virtualization — for SOW lists, users, clients, audit logs |
+| Drag & drop       | **dnd-kit**                                                      | Reordering workflow steps and structured-form fields                                       |
+| Charts            | **Recharts**                                                     | Dashboard visuals: approval counts, status breakdowns, workflow duration                   |
+| Client state      | **TanStack Query** (server cache) + **Zustand** (local UI state) | Avoids Redux; clear split between server-derived and UI-only state                         |
+| Dates             | **date-fns**                                                     | Avoid Moment.js                                                                            |
 
 ### Structured document editing
 
@@ -130,14 +132,17 @@ docx-editor.dev is deliberately _not_ used for the whole document — structured
 
 ```
 core        tenants, users, roles, permissions
-crm         clients, projects
+crm         clients, projects, project_role_assignments, client_project_access
 templates   templates, template_versions
-sow         sows, sow_revisions
+sow         sows, sow_revisions, sow_comments
 workflow    workflows, workflow_versions, workflow_steps,
             workflow_instances, workflow_instance_steps
 audit       audit_logs
 storage     attachments
+ai          tenant_ai_settings
 ```
+
+`client_project_access` and `sow_comments` back the Client persona (PRD §4.2/§5.6a); `tenant_ai_settings` backs agentic editing (§5a below).
 
 ### Search
 
@@ -164,6 +169,8 @@ Example permissions: `client:create`, `client:update`, `project:create`, `templa
 
 **Design principle:** Roles are flexible collections of permissions. Application logic should never contain a literal `if role == Admin` check — authorization is enforced on every mutation, not just at the route level.
 
+**Client persona (PRD §4.2):** adds two scoped permissions, `sow:view` and `sow:comment`, resolved against a `client_project_access` row rather than a role name. A Client-persona user authenticates through the exact same Better Auth session flow as everyone else — only the persona and permission set differ, not the login mechanism. No new auth infrastructure is required.
+
 ---
 
 ## 5. DOCX Processing
@@ -175,6 +182,92 @@ Example permissions: `client:create`, `client:update`, `project:create`, `templa
 | **Mammoth** _(optional)_              | DOCX → HTML preview, for showing an approximate rendering in-app                             |
 
 This layer only produces a populated `.docx` file — it does **not** produce a PDF. PDF conversion is handled separately (§6), since no JS-only library reliably reproduces Word's layout engine for print-accurate output.
+
+---
+
+## 5a. Agentic SOW Editing (AI Provider Abstraction)
+
+Alongside docx-editor.dev's manual WYSIWYG editing (§2), Creators can drive edits through an AI agent that calls the same field-level mutations a human would — never bypassing permission checks or tenant scoping (PRD §5.13).
+
+### Architecture
+
+```
+                 DocxEditor
+                      │
+          createEditorBridge()
+                      │
+          Agent Orchestrator (Next.js)
+                      │
+        ┌─────────────┴─────────────┐
+        │                           │
+   OpenRouter                 Hugging Face
+        │                           │
+ Claude / GPT /              Qwen / Llama /
+ Gemini / DeepSeek           Mistral / etc.
+        │                           │
+        └─────────────┬─────────────┘
+                      │
+              executeToolCall()
+                      │
+                 Live Editor
+```
+
+| Component              | Choice                     | Details                                                                                                                                                                                                                                |
+| ---------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Provider abstraction   | `AIProvider` interface     | `chat(request: ChatRequest): Promise<ChatResponse>` — the same messages, tool schemas, and response shape regardless of backend                                                                                                        |
+| Provider: OpenRouter   | `OpenRouterProvider`       | Routes to Claude, GPT, Gemini, DeepSeek, etc. via one API                                                                                                                                                                              |
+| Provider: Hugging Face | `HuggingFaceProvider`      | Must target a chat + tool/function-calling-capable endpoint (e.g., Qwen3-Coder, Llama, Mistral) — a plain text-generation endpoint that doesn't emit structured tool calls won't work as a live agent without additional orchestration |
+| Agent loop             | Orchestrator route handler | `user → LLM → tool_calls? → executeToolCall() → tool result → LLM → …`, identical regardless of provider — the only line that changes per-provider is `await provider.chat(...)`                                                       |
+| Config scope           | **Per-tenant**             | `tenant.aiProvider`, `tenant.model`, plus API key, temperature, max tokens, tool-calling flag, streaming flag — Tenant A can run OpenRouter+Claude while Tenant B runs Hugging Face+Qwen, with zero code differences                   |
+
+### Provider abstraction (illustrative)
+
+```ts
+// libs/ai/src/provider.interface.ts
+export interface AIProvider {
+  chat(request: ChatRequest): Promise<ChatResponse>;
+}
+```
+
+```ts
+// libs/ai/src/providers/openrouter.ts
+export class OpenRouterProvider implements AIProvider {
+  constructor(private config: { apiKey: string; model: string }) {}
+  async chat(request: ChatRequest): Promise<ChatResponse> {
+    /* ... */
+  }
+}
+```
+
+```ts
+// libs/ai/src/providers/huggingface.ts
+export class HuggingFaceProvider implements AIProvider {
+  constructor(private config: { apiKey: string; model: string }) {}
+  async chat(request: ChatRequest): Promise<ChatResponse> {
+    /* ... */
+  }
+}
+```
+
+The backend instantiates whichever provider a tenant's `tenant_ai_settings` row specifies (`tenant.aiProvider` / `tenant.model`); the agent loop, tool schemas, and `executeToolCall()` path are shared and never branch on provider. Users can be offered a provider/model picker in the UI (OpenRouter → Claude/GPT/Gemini/DeepSeek; Hugging Face → Qwen/Llama/Mistral), but the choice only ever changes which `AIProvider` is instantiated server-side.
+
+### Guardrails (non-negotiable, not just a nicety)
+
+- `executeToolCall()` runs through the _same_ Server Action → permission-check → tenant-scoping path as manual edits (§4). A tool call is just another caller of that path, never a bypass of it.
+- Every successful tool call produces the same audit log entry (§7) a manual edit would, with the human user recorded as `actor` and the provider/model recorded in `metadata`.
+- Agentic editing **edits an existing SOW draft**; it does not originate one from a blank prompt. This keeps it outside the PRD's "AI-generated SOWs" exclusion (PRD §10) — that exclusion is about unprompted, blank-slate generation, not tool-call-driven editing of a Creator-authored draft.
+
+### Data model addition
+
+`tenant_ai_settings (tenant_id, provider, model, api_key_encrypted, temperature, max_tokens, tool_calling_enabled, streaming_enabled)`. API keys must be encrypted at rest — `pgcrypto` is already an adopted extension (§3) and is the natural fit rather than introducing a new secrets dependency.
+
+### Dependencies
+
+No SDK is locked in for the OpenRouter/Hugging Face calls themselves — both are reachable over plain HTTPS with `fetch`, which keeps the `AIProvider` interface exactly as thin as shown above. If the team later wants streaming-to-UI helpers, the Vercel AI SDK (`pnpm add ai`) is worth evaluating, but it isn't required to hit MVP scope.
+
+### Future providers
+
+Google AI Studio, Azure OpenAI, Groq, Together AI, or Ollama all slot in as additional `AIProvider` implementations without touching the orchestrator, the tool schemas, or the UI.
 
 ---
 
@@ -191,10 +284,6 @@ This layer only produces a populated `.docx` file — it does **not** produce a 
 ### Why Inngest
 
 The DOCX pipeline is multi-step, and each step can fail independently (e.g., the conversion service times out mid-request). Inngest provides durable, independently retryable steps instead of hand-rolled retry logic inside a single request/response cycle. A failure at the PDF-conversion step does not require re-running the extract/populate/generate-DOCX steps.
-
-### Workflow diagram preview
-
-When a Tenant Admin builds or reviews a Workflow template, the ordered sequence of steps is rendered as a read-only flow diagram (linear chain of step nodes, in order) using **@xyflow/react** (React Flow), rather than only a list/table view. This is purely a presentation layer over the existing `Workflow → Workflow Version → Workflow Steps` model — no new persistence is introduced; node positions and edges are derived on the client from step order each render, not stored. Lives alongside the dnd-kit-based reorder UI in `libs/workflow`, reusing shared UI primitives from `libs/ui`.
 
 ### Document generation pipeline steps
 
@@ -260,7 +349,7 @@ Per PRD §10, these are **not** part of the MVP stack, even though they appear i
 - Real-time collaboration
 - External (non-authenticated) approval links
 - Elasticsearch/Meilisearch-based search
-- AI-generated SOWs
+- AI-generated SOWs _from a blank prompt_ — agentic **editing** of an existing draft (§5a) is in-scope and is a distinct feature from this
 
 ---
 
@@ -289,6 +378,8 @@ Per PRD §10, these are **not** part of the MVP stack, even though they appear i
 - **Append-only audit logging:** every state-changing action produces an immutable audit entry.
 - **Versioned, immutable workflow execution:** workflow _definitions_ are reusable/versioned; workflow _instances_ are immutable once started, so editing a workflow never affects in-flight approvals.
 - **Structured editing over rich-text editing:** docx-editor.dev is scoped to specific free-text sections, not the whole document — even though it's a Word-like WYSIWYG surface, it's deliberately confined to a handful of fields rather than promoted to the primary editing experience, keeping the PRD's structured-data-first principle intact.
+- **Agents are just another caller of the existing mutation path:** the agent orchestrator's `executeToolCall()` reuses the same permission-checked, tenant-scoped Server Action layer a human edit goes through — no privileged or parallel write path exists for AI-originated changes, and every one is audited identically to a manual edit.
+- **External stakeholder access reuses existing auth, not a new mechanism:** the Client persona authenticates through the same Better Auth session flow as every other persona; only its (fixed, minimal) permission set differs.
 
 ---
 
@@ -300,39 +391,41 @@ These don't change the core stack above but affect implementation details:
 - **Notifications:** confirmed deferred to v2 (including in-app badges) — no notification infra in MVP stack.
 - **Optimistic locking:** a version/`updated_at` check to prevent concurrent-edit overwrites on SOW drafts.
 - **Soft deletes:** `deleted_at` columns on Clients, Projects, and Templates to preserve referential history.
+- **AI provider key encryption:** tenant-level `api_key_encrypted` storage needs an at-rest encryption approach (candidate: `pgcrypto`, already adopted) before agentic editing ships beyond local dev.
+- **AI usage/rate limiting:** per-tenant limits on agentic-editing calls aren't yet specified, particularly relevant if a platform-level fallback key is ever offered alongside bring-your-own-key.
 
 ---
 
 ## 14. Overall Technology Stack (Summary Table)
 
-| Layer                       | Technology                                                                                         |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| Language                    | TypeScript                                                                                         |
-| Frontend                    | Next.js 16 (App Router), React 19                                                                  |
-| Styling                     | Tailwind CSS v4, shadcn/ui, Radix UI                                                               |
-| Forms & validation          | React Hook Form, Zod                                                                               |
-| Structured document editing | docx-editor.dev, RJSF                                                                              |
-| Tables                      | TanStack Table                                                                                     |
-| Drag & drop                 | dnd-kit                                                                                            |
-| Charts                      | Recharts                                                                                           |
-| Workflow diagram preview    | @xyflow/react (React Flow)                                                                         |
-| Client state                | TanStack Query, Zustand                                                                            |
-| Dates                       | date-fns                                                                                           |
-| ORM                         | Prisma                                                                                             |
-| Database                    | PostgreSQL (Supabase for MVP; portable to Neon/RDS/etc.)                                           |
-| Storage                     | Storage interface → Supabase Storage for MVP (portable to S3/R2/MinIO)                             |
-| Authentication              | Better Auth                                                                                        |
-| Authorization               | Permission-based RBAC                                                                              |
-| DOCX generation             | docxtemplater, PizZip, Mammoth (optional preview)                                                  |
-| DOCX → PDF                  | Self-hosted LibreOffice via Gotenberg                                                              |
-| Structured PDF export       | Print-optimized HTML + browser "Save as PDF"                                                       |
-| Background jobs             | Inngest                                                                                            |
-| Logging                     | Pino                                                                                               |
-| Error tracking              | Sentry                                                                                             |
-| Testing                     | Vitest, Testing Library, Playwright                                                                |
-| API docs                    | zod-openapi                                                                                        |
-| Monorepo                    | Nx + pnpm                                                                                          |
-| Deployment                  | Vercel (app) + Dockerized Fly.io/Render (conversion service)                                       |
-| CI/CD                       | GitHub Actions: install → lint → typecheck → unit tests → build → Prisma generate/migrate → deploy |
+| Layer                       | Technology                                                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Language                    | TypeScript                                                                                                         |
+| Frontend                    | Next.js 16 (App Router), React 19                                                                                  |
+| Styling                     | Tailwind CSS v4, shadcn/ui, Radix UI                                                                               |
+| Forms & validation          | React Hook Form, Zod                                                                                               |
+| Structured document editing | docx-editor.dev, RJSF                                                                                              |
+| Agentic editing             | Provider-agnostic `AIProvider` (OpenRouter + Hugging Face for MVP), tenant-configurable provider/model/credentials |
+| Tables                      | TanStack Table                                                                                                     |
+| Drag & drop                 | dnd-kit                                                                                                            |
+| Charts                      | Recharts                                                                                                           |
+| Client state                | TanStack Query, Zustand                                                                                            |
+| Dates                       | date-fns                                                                                                           |
+| ORM                         | Prisma                                                                                                             |
+| Database                    | PostgreSQL (Supabase for MVP; portable to Neon/RDS/etc.)                                                           |
+| Storage                     | Storage interface → Supabase Storage for MVP (portable to S3/R2/MinIO)                                             |
+| Authentication              | Better Auth                                                                                                        |
+| Authorization               | Permission-based RBAC                                                                                              |
+| DOCX generation             | docxtemplater, PizZip, Mammoth (optional preview)                                                                  |
+| DOCX → PDF                  | Self-hosted LibreOffice via Gotenberg                                                                              |
+| Structured PDF export       | Print-optimized HTML + browser "Save as PDF"                                                                       |
+| Background jobs             | Inngest                                                                                                            |
+| Logging                     | Pino                                                                                                               |
+| Error tracking              | Sentry                                                                                                             |
+| Testing                     | Vitest, Testing Library, Playwright                                                                                |
+| API docs                    | zod-openapi                                                                                                        |
+| Monorepo                    | Nx + pnpm                                                                                                          |
+| Deployment                  | Vercel (app) + Dockerized Fly.io/Render (conversion service)                                                       |
+| CI/CD                       | GitHub Actions: install → lint → typecheck → unit tests → build → Prisma generate/migrate → deploy                 |
 
 This stack stays conservative and PostgreSQL-first: every technology is mature and well-supported, and the two PRD-critical pieces the original proposal underspecified — DOCX→PDF conversion and the MVP's explicit non-scope for notifications — are restored to match the locked architecture.

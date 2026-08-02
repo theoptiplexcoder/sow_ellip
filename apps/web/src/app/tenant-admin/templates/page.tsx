@@ -3,12 +3,21 @@
 import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { FileText, Layers, Pencil, Upload } from 'lucide-react';
+import { FileText, Layers, Pencil, Trash2, Upload } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Badge,
   Button,
   Card,
@@ -24,6 +33,7 @@ import { TemplateExportActions } from '@/components/tenant-admin/template-export
 import {
   Template,
   createTemplate,
+  deleteTemplate,
   hasPlaceholders,
   templates,
 } from '@/lib/data/templates';
@@ -46,6 +56,12 @@ export default function TemplatesPage() {
       return templateList.filter((t) => !hasPlaceholders(t));
     return templateList;
   }, [filter, templateList]);
+
+  function handleDelete(t: Template) {
+    deleteTemplate(t.id);
+    setTemplateList([...templates]);
+    toast.success(`"${t.name}" deleted`);
+  }
 
   async function handleUpload(file: File) {
     setUploading(true);
@@ -239,6 +255,41 @@ export default function TemplatesPage() {
                       Edit in product
                     </Button>
                     <TemplateExportActions template={t} />
+                    <AlertDialog>
+                      <AlertDialogTrigger
+                        render={
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="ml-auto text-destructive hover:text-destructive"
+                          />
+                        }
+                      >
+                        <Trash2 className="size-3.5" />
+                        Delete
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Delete "{t.name}"?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This permanently removes the template and its
+                            version history. SOWs already generated from it are
+                            unaffected.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            variant="destructive"
+                            onClick={() => handleDelete(t)}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>

@@ -85,7 +85,7 @@ Per PRD §7 / tech_stack §1, generate each library as an Nx TypeScript library
 
 ```bash
 for lib in auth permissions database storage tenants users clients projects \
-           templates sow workflow audit dashboard validation ui shared; do
+           templates sow workflow audit dashboard validation ui shared ai; do
   npx nx g @nx/js:lib "libs/$lib" --unitTestRunner=vitest --bundler=none
 done
 ```
@@ -112,6 +112,7 @@ libs/
   validation/
   ui/
   shared/
+  ai/
 ```
 
 Add path aliases for each lib in the root `tsconfig.base.json` (Nx does this
@@ -134,7 +135,8 @@ automatically on generation — verify):
   "@sow-platform/dashboard": ["libs/dashboard/src/index.ts"],
   "@sow-platform/validation": ["libs/validation/src/index.ts"],
   "@sow-platform/ui": ["libs/ui/src/index.ts"],
-  "@sow-platform/shared": ["libs/shared/src/index.ts"]
+  "@sow-platform/shared": ["libs/shared/src/index.ts"],
+  "@sow-platform/ai": ["libs/ai/src/index.ts"]
 }
 ```
 
@@ -164,13 +166,12 @@ pnpm add @tiptap/react @tiptap/pm @tiptap/starter-kit
 pnpm add @rjsf/core @rjsf/validator-ajv8 @rjsf/utils
 ```
 
-### Tables, drag-and-drop, charts, diagrams, state
+### Tables, drag-and-drop, charts, state
 
 ```bash
 pnpm add @tanstack/react-table @tanstack/react-query
 pnpm add @dnd-kit/core @dnd-kit/sortable
 pnpm add recharts
-pnpm add @xyflow/react
 pnpm add zustand
 pnpm add date-fns
 ```
@@ -266,10 +267,12 @@ end-to-end before real schema design (PRD §6):
 // core
 model Tenant { id String @id @default(uuid()) name String }
 
-// Add tenants, users, roles, permissions, clients, projects, templates,
-// template_versions, sows, sow_revisions, workflows, workflow_versions,
-// workflow_steps, workflow_instances, workflow_instance_steps, audit_logs,
-// attachments incrementally — every table gets a `tenantId String` column
+// Add tenants, users, roles, permissions, clients, projects,
+// project_role_assignments, client_project_access, templates,
+// template_versions, sows, sow_revisions, sow_comments, workflows,
+// workflow_versions, workflow_steps, workflow_instances,
+// workflow_instance_steps, audit_logs, attachments, tenant_ai_settings
+// incrementally — every table gets a `tenantId String` column
 // (except `tenants` itself) per PRD §3.
 ```
 
@@ -356,8 +359,10 @@ export const { GET, POST } = toNextJsHandler(auth);
 
 Add route protection middleware at `apps/web/middleware.ts` referencing the
 session cookie, and a seed script for demo users per persona (Superadmin,
-Tenant Admin, Participant — PRD §4). Creator/Approver/Executive Viewer are
-per-project roles held by a Participant, not separate personas (PRD §4.1).
+Tenant Admin, Participant, Client — PRD §4). Creator/Approver/Executive Viewer
+are per-project roles held by a Participant, not separate personas (PRD §4.1).
+Client is its own persona, linked to specific projects via
+`client_project_access` rather than `project_role_assignments` (PRD §4.2).
 
 ---
 
@@ -365,7 +370,19 @@ per-project roles held by a Participant, not separate personas (PRD §4.1).
 
 ```ts
 // libs/permissions/src/permissions.ts
-export const PERMISSIONS = ['client:create', 'client:update', 'project:create', 'template:create', 'workflow:create', 'workflow:approve', 'workflow:reject', 'audit:view', 'user:manage'] as const;
+export const PERMISSIONS = [
+  'client:create',
+  'client:update',
+  'project:create',
+  'template:create',
+  'workflow:create',
+  'workflow:approve',
+  'workflow:reject',
+  'audit:view',
+  'user:manage',
+  'sow:view',
+  'sow:comment', // held by the Client persona, PRD §4.2 — scoped via client_project_access
+] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
 ```
@@ -393,53 +410,6 @@ pnpm dlx shadcn@latest add button input table dialog form dropdown-menu
 
 Place generated components under `libs/ui/src/components` and re-export from
 `libs/ui/src/index.ts` so both routes and future apps share them.
-
-Stub the workflow diagram preview component using React Flow (`@xyflow/react`),
-which renders the ordered `Workflow Steps` of a template as a read-only chain
-of nodes — derived client-side from step order, no diagram-specific persistence:
-
-```tsx
-// libs/workflow/src/components/workflow-diagram-preview.tsx
-'use client';
-
-import { ReactFlow, Background, Controls, type Node, type Edge } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-
-export interface WorkflowStepPreview {
-  id: string;
-  name: string;
-  order: number;
-}
-
-export function WorkflowDiagramPreview({ steps }: { steps: WorkflowStepPreview[] }) {
-  const ordered = [...steps].sort((a, b) => a.order - b.order);
-
-  const nodes: Node[] = ordered.map((step, i) => ({
-    id: step.id,
-    position: { x: i * 220, y: 0 },
-    data: { label: step.name },
-    draggable: false,
-  }));
-
-  const edges: Edge[] = ordered.slice(1).map((step, i) => ({
-    id: `${ordered[i].id}-${step.id}`,
-    source: ordered[i].id,
-    target: step.id,
-  }));
-
-  return (
-    <div style={{ height: 240 }}>
-      <ReactFlow nodes={nodes} edges={edges} fitView nodesConnectable={false} edgesFocusable={false}>
-        <Background />
-        <Controls showInteractive={false} />
-      </ReactFlow>
-    </div>
-  );
-}
-```
-
-Re-export from `libs/workflow/src/index.ts` so both the workflow-template
-builder and the workflow-instance/approval views can render the same preview.
 
 ---
 
@@ -499,6 +469,132 @@ Run the local Inngest dev server alongside `next dev`:
 ```bash
 npx inngest-cli@latest dev
 ```
+
+---
+
+## 10a. Set up the Agent Orchestrator & AI provider abstraction
+
+Per PRD §5.13 / tech_stack §5a — agentic editing sits alongside docx-editor.dev,
+not in place of it, and reuses the same permission/tenant-scoping path as a
+manual edit.
+
+```ts
+// libs/ai/src/provider.interface.ts
+export interface ChatRequest {
+  messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string }>;
+  tools?: unknown[];
+}
+
+export interface ChatResponse {
+  content: string;
+  toolCalls?: Array<{ name: string; arguments: Record<string, unknown> }>;
+}
+
+export interface AIProvider {
+  chat(request: ChatRequest): Promise<ChatResponse>;
+}
+```
+
+```ts
+// libs/ai/src/providers/openrouter.ts
+import type { AIProvider, ChatRequest, ChatResponse } from '../provider.interface';
+
+export class OpenRouterProvider implements AIProvider {
+  constructor(private config: { apiKey: string; model: string }) {}
+
+  async chat(request: ChatRequest): Promise<ChatResponse> {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.config.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ model: this.config.model, messages: request.messages, tools: request.tools }),
+    });
+    if (!res.ok) throw new Error(`OpenRouter request failed: ${res.status}`);
+    const data = await res.json();
+    return { content: data.choices?.[0]?.message?.content ?? '', toolCalls: data.choices?.[0]?.message?.tool_calls };
+  }
+}
+```
+
+```ts
+// libs/ai/src/providers/huggingface.ts
+import type { AIProvider, ChatRequest, ChatResponse } from '../provider.interface';
+
+export class HuggingFaceProvider implements AIProvider {
+  constructor(private config: { apiKey: string; model: string }) {}
+
+  async chat(request: ChatRequest): Promise<ChatResponse> {
+    // Must target a chat + tool/function-calling-capable HF endpoint;
+    // a plain text-generation endpoint won't emit structured tool calls.
+    const res = await fetch(`https://api-inference.huggingface.co/models/${this.config.model}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.config.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ messages: request.messages, tools: request.tools }),
+    });
+    if (!res.ok) throw new Error(`Hugging Face request failed: ${res.status}`);
+    const data = await res.json();
+    return { content: data.choices?.[0]?.message?.content ?? '', toolCalls: data.choices?.[0]?.message?.tool_calls };
+  }
+}
+```
+
+```ts
+// libs/ai/src/get-provider.ts
+import { OpenRouterProvider } from './providers/openrouter';
+import { HuggingFaceProvider } from './providers/huggingface';
+import type { AIProvider } from './provider.interface';
+
+export function getProviderForTenant(settings: { provider: 'openrouter' | 'huggingface'; model: string; apiKey: string }): AIProvider {
+  switch (settings.provider) {
+    case 'openrouter':
+      return new OpenRouterProvider(settings);
+    case 'huggingface':
+      return new HuggingFaceProvider(settings);
+    default:
+      throw new Error(`Unknown AI provider: ${settings.provider}`);
+  }
+}
+```
+
+Stub the orchestrator route and the agent loop. `executeToolCall` must run
+through the same permission-check/tenant-scoping layer as a manual Server
+Action edit (§8) — never a separate, privileged write path:
+
+```ts
+// apps/web/app/api/ai/edit-sow/route.ts
+import { getProviderForTenant } from '@sow-platform/ai/get-provider';
+import { executeToolCall } from '@sow-platform/ai/execute-tool-call';
+
+export async function POST(req: Request) {
+  // 1. Resolve the caller's tenant's AI settings (provider, model, decrypted key) from tenant_ai_settings
+  // 2. Verify the caller holds the Creator project role on the target SOW's project — same check a manual edit uses
+  // 3. Run the agent loop: provider.chat() -> tool_calls? -> executeToolCall() -> tool result -> provider.chat() -> ...
+  // 4. Every successful executeToolCall() writes an audit_logs row (actor = caller, metadata = { provider, model })
+}
+```
+
+Add the tenant AI settings model alongside the rest of the schema (§5):
+
+```prisma
+model TenantAiSettings {
+  tenantId            String   @id
+  provider             String   // 'openrouter' | 'huggingface'
+  model                String
+  apiKeyEncrypted      String
+  temperature          Float    @default(0.2)
+  maxTokens            Int      @default(2048)
+  toolCallingEnabled   Boolean  @default(true)
+  streamingEnabled     Boolean  @default(false)
+}
+```
+
+Encrypt `apiKeyEncrypted` at rest (e.g. via `pgcrypto`, already enabled in §5)
+rather than storing tenant-supplied provider keys as plaintext.
 
 ---
 
@@ -603,6 +699,12 @@ INNGEST_SIGNING_KEY=
 
 # Gotenberg / conversion service
 GOTENBERG_URL=http://localhost:3005
+
+# AI providers (agentic SOW editing — PRD §5.13, tech_stack §5a)
+# Platform-level fallback keys only; a tenant's own tenant_ai_settings row,
+# if present, takes precedence.
+OPENROUTER_API_KEY=
+HF_TOKEN=
 
 # Sentry
 SENTRY_DSN=
@@ -732,6 +834,8 @@ Checklist before moving to feature work:
 - [ ] `/sows/[id]/print` renders independent of Inngest/Gotenberg being up
 - [ ] `pnpm exec vitest run` and `pnpm exec playwright test` both pass on stub tests
 - [ ] Pre-commit hook runs lint + format on a dummy commit
+- [ ] `POST /api/ai/edit-sow` responds (even a stubbed 501 is fine until a provider key is configured) and rejects a caller without the Creator project role
+- [ ] Demo Client-persona user seeded, scoped via `client_project_access`, can view/comment on a non-Draft SOW and cannot see Draft SOWs or other projects
 
 ---
 
@@ -746,3 +850,9 @@ decisions, before deeper feature build):
 4. Add `deletedAt` soft-delete columns to Clients, Projects, Templates
 5. Build out the SOW state machine (PRD §5.9) as an explicit, testable module
    rather than ad hoc status updates
+6. Encrypt tenant AI provider API keys at rest (`pgcrypto`) before enabling
+   agentic editing beyond local dev (PRD §11, tech_stack §13)
+7. Decide per-tenant AI usage/rate limiting, and whether a platform-level
+   fallback key is offered alongside bring-your-own-key (PRD §11)
+8. Decide Client-persona account provisioning (Tenant Admin-created vs.
+   invite-link self-registration) — PRD §11

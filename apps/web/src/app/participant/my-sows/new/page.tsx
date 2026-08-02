@@ -30,6 +30,7 @@ import { createSow } from '@/lib/data/sows';
 import { templates, hasPlaceholders } from '@/lib/data/templates';
 import { generateDocxBlob } from '@/lib/docx/generate-docx';
 import { parseDocxFile } from '@/lib/docx/parse-docx';
+import { fillPlaceholders, placeholderLabel } from '@/lib/docx/placeholders';
 
 const DocxEditor = dynamic(
   () => import('@eigenpal/docx-editor-react').then((m) => m.DocxEditor),
@@ -40,22 +41,6 @@ const DocxEditor = dynamic(
 );
 
 type Step = 'project' | 'template' | 'fill' | 'edit';
-
-function placeholderLabel(token: string) {
-  return token
-    .replace(/^\{\{|\}\}$/g, '')
-    .replace(/_/g, ' ')
-    .replace(/^\w/, (c) => c.toUpperCase());
-}
-
-function fillPlaceholders(bodyHtml: string, values: Record<string, string>) {
-  let html = bodyHtml;
-  for (const [token, value] of Object.entries(values)) {
-    if (!value) continue;
-    html = html.split(token).join(value);
-  }
-  return html;
-}
 
 export default function NewSowPage() {
   const router = useRouter();
@@ -129,6 +114,8 @@ export default function NewSowPage() {
         projectName: project.name,
         creator: me.name,
         templateName: template.name,
+        templateId: template.id,
+        placeholderValues: values,
         documentHtml,
       });
       toast.success('SOW saved as draft (prototype only — not persisted)');

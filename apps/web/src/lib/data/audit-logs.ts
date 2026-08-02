@@ -94,3 +94,9 @@ export const auditLogs: AuditLogEntry[] = [
     metadata: { status: 'Approved' },
   },
 ];
+
+export function addAuditLog(entry: Omit<AuditLogEntry, 'id'>) {
+  const log: AuditLogEntry = { id: `a-${Date.now()}`, ...entry };
+  auditLogs.push(log);
+  return log;
+}

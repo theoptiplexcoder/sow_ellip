@@ -1,11 +1,20 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar, ShieldCheck, User, Users } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@sow-platform/ui';
+import { ArrowLeft, Calendar, Mail, Users } from 'lucide-react';
+import { Avatar, AvatarFallback, Card, CardContent } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatusPill } from '@/components/shared/status-badge';
 import { OrganizationStatusAction } from '@/components/superadmin/organization-status-action';
 import { getOrganization } from '@/lib/data/organizations';
+
+function orgInitials(name: string) {
+  return name
+    .split(' ')
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
 
 export default async function OrganizationDetailPage({
   params,
@@ -30,66 +39,47 @@ export default async function OrganizationDetailPage({
         actions={<OrganizationStatusAction organization={org} />}
       />
 
-      <h2 className="mb-4 font-display text-lg font-semibold tracking-tight">
-        Tenant Summary
-      </h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="gap-3">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Tenant Admin
-            </CardTitle>
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <User className="size-4" />
-            </span>
-          </CardHeader>
-          <CardContent>
-            <div className="font-medium">{org.tenantAdminName}</div>
-            <div className="text-sm text-muted-foreground">
-              {org.tenantAdminEmail}
+      <Card>
+        <CardContent className="flex flex-col gap-6 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <Avatar className="size-14 shrink-0">
+              <AvatarFallback className="text-lg">
+                {orgInitials(org.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-display text-xl font-semibold tracking-tight">
+                  {org.name}
+                </span>
+                <StatusPill active={org.status === 'active'} />
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <Users className="size-3.5" />
+                  {org.tenantAdminName}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Mail className="size-3.5" />
+                  {org.tenantAdminEmail}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar className="size-3.5" />
+                  Created {org.createdAt}
+                </span>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="gap-3">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Status
-            </CardTitle>
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <ShieldCheck className="size-4" />
-            </span>
-          </CardHeader>
-          <CardContent>
-            <StatusPill active={org.status === 'active'} />
-          </CardContent>
-        </Card>
-        <Card className="gap-3">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Users
-            </CardTitle>
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <Users className="size-4" />
-            </span>
-          </CardHeader>
-          <CardContent className="font-display text-2xl font-semibold tracking-tight">
-            {org.userCount}
-          </CardContent>
-        </Card>
-        <Card className="gap-3">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Created
-            </CardTitle>
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <Calendar className="size-4" />
-            </span>
-          </CardHeader>
-          <CardContent className="font-display text-2xl font-semibold tracking-tight">
-            {org.createdAt}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-6 border-t pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
+            <div>
+              <div className="font-display text-2xl font-semibold tracking-tight tabular-nums">
+                {org.userCount}
+              </div>
+              <div className="text-xs text-muted-foreground">Users</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <p className="mt-8 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
         No SOW, template, or workflow content is visible here — Superadmin scope

@@ -193,6 +193,12 @@ export function getTemplate(id: string) {
   return templates.find((t) => t.id === id);
 }
 
+export function deleteTemplate(id: string) {
+  const index = templates.findIndex((t) => t.id === id);
+  if (index === -1) return;
+  templates.splice(index, 1);
+}
+
 export function createTemplate(
   name: string,
   bodyHtml: string = DEFAULT_DOCX_BODY_HTML,
@@ -220,13 +226,20 @@ export function saveTemplate(
   bodyHtml: string,
   placeholders: string[],
   fileUrl?: string,
+  note = 'Edited in product',
 ) {
   const template = getTemplate(id);
   if (!template) return;
+  const today = new Date().toISOString().slice(0, 10);
   template.bodyHtml = bodyHtml;
   template.placeholders = placeholders;
   if (fileUrl) template.fileUrl = fileUrl;
-  template.updatedAt = new Date().toISOString().slice(0, 10);
+  template.updatedAt = today;
+  template.version += 1;
+  template.versions = [
+    { version: template.version, uploadedAt: today, note },
+    ...template.versions,
+  ];
 }
 
 export function renameTemplate(id: string, name: string) {

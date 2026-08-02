@@ -15,6 +15,10 @@ export interface Project {
   sowCount: number;
   members: ProjectMember[];
   files: { id: string; name: string; uploadedAt: string }[];
+  description?: string;
+  startDate?: string;
+  deadline?: string;
+  requirements?: string[];
 }
 
 export const projects: Project[] = [
@@ -33,6 +37,16 @@ export const projects: Project[] = [
       { userId: 'user-5', roles: ['executive_viewer'] },
     ],
     files: [{ id: 'f1', name: 'Site Survey.pdf', uploadedAt: '2026-02-01' }],
+    description:
+      "Redesign and rebuild the digital storefront experience across Harborline's retail locations, including POS integration and a refreshed loyalty program.",
+    startDate: '2026-01-15',
+    deadline: '2026-09-30',
+    requirements: [
+      'POS system integrated with new inventory backend',
+      'Loyalty program migrated without data loss',
+      'Accessibility audit passed (WCAG 2.1 AA)',
+      'Staff training materials delivered',
+    ],
   },
   {
     id: 'proj-2',
@@ -48,6 +62,15 @@ export const projects: Project[] = [
       { userId: 'user-8', roles: ['creator'] },
     ],
     files: [],
+    description:
+      "Modernize warehouse routing and fleet dispatch software for Cobalt's three regional distribution centers.",
+    startDate: '2026-03-01',
+    deadline: '2026-08-20',
+    requirements: [
+      'Real-time fleet tracking dashboard',
+      'Automated dispatch routing engine',
+      'Integration with existing WMS',
+    ],
   },
   {
     id: 'proj-3',
@@ -71,6 +94,17 @@ export const projects: Project[] = [
       },
       { id: 'f3', name: 'Integration Diagram.png', uploadedAt: '2026-02-11' },
     ],
+    description:
+      'Build a secure patient-facing portal for Meridian Health Partners, integrating appointment scheduling and records access with the existing EHR system.',
+    startDate: '2025-11-10',
+    deadline: '2026-08-15',
+    requirements: [
+      'HIPAA compliance sign-off',
+      'EHR integration (HL7/FHIR)',
+      'Multi-factor authentication for patient login',
+      'Appointment scheduling with provider calendars',
+      'Accessibility audit passed (WCAG 2.1 AA)',
+    ],
   },
   {
     id: 'proj-4',
@@ -85,6 +119,14 @@ export const projects: Project[] = [
       { userId: 'user-1', roles: ['approver'] },
     ],
     files: [],
+    description:
+      'Pilot an energy-usage analytics dashboard across two Palmetto facilities, currently paused pending budget approval.',
+    startDate: '2026-02-01',
+    deadline: '2026-11-01',
+    requirements: [
+      'Sensor data pipeline validated',
+      'Budget approval from facilities leadership',
+    ],
   },
   {
     id: 'proj-5',
@@ -103,6 +145,15 @@ export const projects: Project[] = [
     files: [
       { id: 'f4', name: 'Migration Runbook.docx', uploadedAt: '2026-05-02' },
     ],
+    description:
+      "First wave of Nimbus Cloud Ventures' migration off legacy on-prem infrastructure — core services and databases.",
+    startDate: '2026-04-01',
+    deadline: '2026-09-01',
+    requirements: [
+      'Zero-downtime database cutover plan',
+      'Core services containerized',
+      'Rollback plan documented and tested',
+    ],
   },
   {
     id: 'proj-6',
@@ -117,6 +168,15 @@ export const projects: Project[] = [
       { userId: 'user-1', roles: ['approver'] },
     ],
     files: [],
+    description:
+      "Second and final wave of Nimbus Cloud Ventures' cloud migration, covering remaining edge services. Completed on schedule.",
+    startDate: '2026-01-05',
+    deadline: '2026-04-30',
+    requirements: [
+      'Edge services migrated',
+      'Legacy infrastructure decommissioned',
+      'Post-migration cost audit',
+    ],
   },
 ];
 

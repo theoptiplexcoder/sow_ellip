@@ -15,7 +15,11 @@ import {
   cn,
 } from '@sow-platform/ui';
 
-export type PersonaRole = 'superadmin' | 'tenant_admin' | 'participant';
+export type PersonaRole =
+  | 'superadmin'
+  | 'tenant_admin'
+  | 'participant'
+  | 'client';
 
 export interface NavItem {
   label: string;
@@ -28,6 +32,8 @@ export interface AppShellProps {
   personaLabel: string;
   navItems: NavItem[];
   footerNavItems?: NavItem[];
+  /** Extra content rendered in the sidebar below the primary nav (e.g. a role-specific section). */
+  sidebarExtra?: React.ReactNode;
   user: { name: string; email: string; initials: string };
   children: React.ReactNode;
 }
@@ -113,6 +119,7 @@ function SidebarBody({
   personaLabel,
   navItems,
   footerNavItems,
+  sidebarExtra,
   user,
   pathname,
   onNavigate,
@@ -120,6 +127,7 @@ function SidebarBody({
   personaLabel: string;
   navItems: NavItem[];
   footerNavItems?: NavItem[];
+  sidebarExtra?: React.ReactNode;
   user: AppShellProps['user'];
   pathname: string;
   onNavigate?: () => void;
@@ -144,6 +152,7 @@ function SidebarBody({
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-1">
         <NavList items={navItems} pathname={pathname} onNavigate={onNavigate} />
+        {sidebarExtra}
       </div>
       {footerNavItems && footerNavItems.length > 0 && (
         <div className="border-t border-sidebar-border px-3 py-3">
@@ -247,6 +256,7 @@ export function AppShell({
   personaLabel,
   navItems,
   footerNavItems,
+  sidebarExtra,
   user,
   children,
 }: AppShellProps) {
@@ -266,6 +276,7 @@ export function AppShell({
             personaLabel={personaLabel}
             navItems={navItems}
             footerNavItems={footerNavItems}
+            sidebarExtra={sidebarExtra}
             user={user}
             pathname={pathname}
           />
@@ -322,6 +333,7 @@ export function AppShell({
                 pathname={pathname}
                 onNavigate={() => setMoreOpen(false)}
               />
+              {sidebarExtra}
             </div>
             <AccountRow user={user} />
           </div>

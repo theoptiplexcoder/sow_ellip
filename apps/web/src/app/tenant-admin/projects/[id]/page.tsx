@@ -17,6 +17,7 @@ import {
 import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { SowStatusBadge } from '@/components/shared/status-badge';
+import { ClientAccessPanel } from '@/components/tenant-admin/client-access-panel';
 import { ProjectMembersBoard } from '@/components/tenant-admin/project-members-board';
 import { getProject } from '@/lib/data/projects';
 import { sows } from '@/lib/data/sows';
@@ -62,6 +63,7 @@ export default async function ProjectDetailPage({
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="sows">SOWs</TabsTrigger>
           <TabsTrigger value="members">Members</TabsTrigger>
+          <TabsTrigger value="client-access">Client Access</TabsTrigger>
           <TabsTrigger value="workflow">Workflow</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>
           <TabsTrigger value="audit">Audit</TabsTrigger>
@@ -132,6 +134,10 @@ export default async function ProjectDetailPage({
             projectId={project.id}
             members={project.members}
           />
+        </TabsContent>
+
+        <TabsContent value="client-access">
+          <ClientAccessPanel project={project} />
         </TabsContent>
 
         <TabsContent value="workflow">

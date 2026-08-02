@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import { AppShell, type NavItem } from '@/components/layout/app-shell';
+import { WorkflowsSidebarSection } from '@/components/participant/workflows-sidebar-section';
 import { currentUsers } from '@/lib/data/current-user';
 
 const navItems: NavItem[] = [
@@ -28,6 +29,7 @@ export default function ParticipantLayout({
       role="participant"
       personaLabel="Participant"
       navItems={navItems}
+      sidebarExtra={<WorkflowsSidebarSection />}
       user={currentUsers.participant}
     >
       {children}

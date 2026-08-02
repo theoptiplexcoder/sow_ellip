@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
-import { SowDetailTabs } from '@/components/shared/sow-detail-tabs';
+import { ParticipantSowDetail } from '@/components/participant/participant-sow-detail';
 import { getSow } from '@/lib/data/sows';
 
 export default async function MySowDetailPage({
@@ -26,9 +26,8 @@ export default async function MySowDetailPage({
         title={`${sow.number} — ${sow.title}`}
         description={`${sow.clientName} · ${sow.projectName}`}
       />
-      <SowDetailTabs
+      <ParticipantSowDetail
         sow={sow}
-        variant="creator"
         showConflictBanner={sow.id === 'sow-1039'}
       />
     </div>

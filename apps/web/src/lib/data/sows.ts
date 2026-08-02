@@ -42,6 +42,8 @@ export interface Sow {
   updatedAt: string;
   creator: string;
   workflowTemplateName: string;
+  /** Id of the workflow template (from the tenant-admin-managed set) chosen to govern approval of this SOW. */
+  workflowTemplateId?: string;
   sections: {
     objectives: string;
     scope: string;
@@ -59,6 +61,10 @@ export interface Sow {
   revisions: SowRevision[];
   /** Name of the template this SOW was generated from, if created via the template-based flow. */
   templateName?: string;
+  /** Id of the template this SOW was generated from — lets the draft editor re-show the placeholder form. */
+  templateId?: string;
+  /** Placeholder token -> value map captured when the SOW was generated from a template. */
+  placeholderValues?: Record<string, string>;
   /** Filled-in document body (HTML) produced by the New SOW flow's docx editor. */
   documentHtml?: string;
 }
@@ -77,6 +83,7 @@ export const sows: Sow[] = [
     updatedAt: '2026-07-30',
     creator: 'Casey Odom',
     workflowTemplateName: 'Standard Workflow',
+    workflowTemplateId: 'wf-1',
     sections: {
       objectives:
         'Deliver a modernized storefront experience across web and mobile for Harborline retail locations.',
@@ -145,6 +152,7 @@ export const sows: Sow[] = [
     updatedAt: '2026-07-28',
     creator: 'Priya Shah',
     workflowTemplateName: '3-Step Legal Review',
+    workflowTemplateId: 'wf-3',
     sections: {
       objectives:
         'Integrate Meridian patient portal with the scheduling and billing APIs.',
@@ -223,6 +231,29 @@ export const sows: Sow[] = [
     updatedAt: '2026-07-15',
     creator: 'Ravi Kapoor',
     workflowTemplateName: 'Standard Workflow',
+    templateName: 'Northwind SOW Letterhead.docx',
+    templateId: 'tmpl-4',
+    placeholderValues: {
+      '{{client}}': 'Nimbus Cloud Ventures',
+      '{{project}}': 'Cloud Migration Wave 1',
+      '{{scope}}':
+        'Lift-and-shift of 40 VMs and associated storage volumes with minimal downtime.',
+      '{{pricing}}': '$65,000 — Migration engineering',
+      '{{milestones}}': 'Migration wave complete — 2026-09-01',
+      '{{signature_block}}': '',
+    },
+    documentHtml: `
+      <h1>Northwind SOW Letterhead</h1>
+      <p>Prepared for Nimbus Cloud Ventures</p>
+      <p>Project: Cloud Migration Wave 1</p>
+      <h2>Scope</h2>
+      <p>Lift-and-shift of 40 VMs and associated storage volumes with minimal downtime.</p>
+      <h2>Pricing</h2>
+      <p>$65,000 — Migration engineering</p>
+      <h2>Milestones</h2>
+      <p>Migration wave complete — 2026-09-01</p>
+      <p>Signature: {{signature_block}}</p>
+    `.trim(),
     sections: {
       objectives:
         'Migrate core compute and storage workloads to the target cloud environment.',
@@ -269,6 +300,7 @@ export const sows: Sow[] = [
     updatedAt: '2026-05-04',
     creator: 'Marcus Yee',
     workflowTemplateName: 'Finance Approval',
+    workflowTemplateId: 'wf-2',
     sections: {
       objectives: 'Roll out logistics tracking software to Batch 1 warehouses.',
       scope: 'Deployment across 5 warehouses with barcode scanner integration.',
@@ -326,6 +358,7 @@ export const sows: Sow[] = [
     updatedAt: '2026-03-19',
     creator: 'Talia Brooks',
     workflowTemplateName: 'Standard Workflow',
+    workflowTemplateId: 'wf-1',
     sections: {
       objectives:
         'Deploy IoT sensors across two facilities for a 90-day analytics pilot.',
@@ -376,6 +409,8 @@ export function createSow(input: {
   projectName: string;
   creator: string;
   templateName?: string;
+  templateId?: string;
+  placeholderValues?: Record<string, string>;
   documentHtml?: string;
 }): Sow {
   const today = new Date().toISOString().slice(0, 10);
@@ -392,7 +427,7 @@ export function createSow(input: {
     version: 1,
     updatedAt: today,
     creator: input.creator,
-    workflowTemplateName: 'Standard Workflow',
+    workflowTemplateName: '',
     sections: {
       objectives: '',
       scope: '',
@@ -417,6 +452,8 @@ export function createSow(input: {
       },
     ],
     templateName: input.templateName,
+    templateId: input.templateId,
+    placeholderValues: input.placeholderValues,
     documentHtml: input.documentHtml,
   };
   sows.push(sow);
@@ -425,11 +462,25 @@ export function createSow(input: {
 
 export function updateSow(
   id: string,
-  patch: Partial<Pick<Sow, 'title' | 'sections' | 'documentHtml'>>,
+  patch: Partial<
+    Pick<Sow, 'title' | 'sections' | 'documentHtml' | 'placeholderValues'>
+  >,
 ) {
   const sow = getSow(id);
   if (!sow) return;
   Object.assign(sow, patch);
+  sow.updatedAt = new Date().toISOString().slice(0, 10);
+}
+
+export function setSowWorkflowTemplate(
+  id: string,
+  workflowTemplateId: string,
+  workflowTemplateName: string,
+) {
+  const sow = getSow(id);
+  if (!sow) return;
+  sow.workflowTemplateId = workflowTemplateId;
+  sow.workflowTemplateName = workflowTemplateName;
   sow.updatedAt = new Date().toISOString().slice(0, 10);
 }
 

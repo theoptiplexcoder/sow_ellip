@@ -32,6 +32,7 @@ import {
 } from '@sow-platform/ui';
 import { AlertTriangle } from 'lucide-react';
 import { SowBuilderSections } from '@/components/shared/sow-builder-sections';
+import { SowCommentsPanel } from '@/components/shared/sow-comments-panel';
 import { SowExportActions } from '@/components/shared/sow-export-actions';
 import { SowStateStrip } from '@/components/shared/sow-state-strip';
 import { SowStatusBadge } from '@/components/shared/status-badge';
@@ -75,6 +76,7 @@ export function SowDetailTabs({
         <TabsTrigger value="workflow">Workflow</TabsTrigger>
         <TabsTrigger value="versions">Versions</TabsTrigger>
         <TabsTrigger value="files">Files</TabsTrigger>
+        <TabsTrigger value="comments">Comments</TabsTrigger>
         <TabsTrigger value="audit">Audit</TabsTrigger>
       </TabsList>
 
@@ -253,6 +255,18 @@ export function SowDetailTabs({
         <p className="text-sm text-muted-foreground">
           No attachments uploaded to this SOW yet.
         </p>
+      </TabsContent>
+
+      <TabsContent value="comments">
+        <p className="mb-4 text-sm text-muted-foreground">
+          Shared thread visible to Participants and the linked Client contact.
+          Tenant Admins can view but not post here.
+        </p>
+        <SowCommentsPanel
+          sowId={sow.id}
+          currentAuthor={{ id: 'n/a', name: 'n/a', type: 'participant' }}
+          canComment={false}
+        />
       </TabsContent>
 
       <TabsContent value="audit">

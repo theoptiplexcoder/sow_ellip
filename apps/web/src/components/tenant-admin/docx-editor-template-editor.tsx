@@ -25,12 +25,14 @@ export function DocxEditorTemplateEditor({
   fileUrl,
   bodyHtml,
   placeholders: initialPlaceholders,
+  onSaved,
 }: {
   templateId: string;
   name: string;
   fileUrl?: string;
   bodyHtml: string;
   placeholders: string[];
+  onSaved?: () => void;
 }) {
   const editorRef = useRef<DocxEditorRef>(null);
   const [buffer, setBuffer] = useState<ArrayBuffer | null>(null);
@@ -90,6 +92,7 @@ export function DocxEditorTemplateEditor({
         new Set([...placeholders, ...detected]),
       );
       saveTemplate(templateId, html, mergedPlaceholders, fileUrl);
+      onSaved?.();
       toast.success('Template saved');
     } catch {
       toast.error(

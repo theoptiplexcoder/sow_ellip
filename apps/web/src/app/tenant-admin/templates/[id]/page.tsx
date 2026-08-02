@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -8,7 +8,11 @@ import { Badge } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
 import { DocxEditorTemplateEditor } from '@/components/tenant-admin/docx-editor-template-editor';
 import { TemplateExportActions } from '@/components/tenant-admin/template-export-actions';
-import { getTemplate, hasPlaceholders } from '@/lib/data/templates';
+import {
+  getTemplate,
+  hasPlaceholders,
+  type Template,
+} from '@/lib/data/templates';
 
 export default function TemplateDetailPage({
   params,
@@ -16,7 +20,9 @@ export default function TemplateDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const template = getTemplate(id);
+  const [template, setTemplate] = useState<Template | undefined>(() =>
+    getTemplate(id),
+  );
   if (!template) notFound();
 
   return (
@@ -55,6 +61,7 @@ export default function TemplateDetailPage({
         fileUrl={template.fileUrl}
         bodyHtml={template.bodyHtml}
         placeholders={template.placeholders}
+        onSaved={() => setTemplate((prev) => prev && { ...prev })}
       />
 
       <p className="mt-6 text-xs text-muted-foreground">

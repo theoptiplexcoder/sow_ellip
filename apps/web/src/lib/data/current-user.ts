@@ -1,4 +1,4 @@
-export type Persona = 'superadmin' | 'tenant_admin' | 'participant';
+export type Persona = 'superadmin' | 'tenant_admin' | 'participant' | 'client';
 
 export const currentTenant: { name: string; slug: string; logoUrl: string } = {
   name: 'Northwind Consulting',
@@ -32,5 +32,11 @@ export const currentUsers: Record<
     name: 'Ravi Kapoor',
     email: 'ravi@northwind.io',
     initials: 'RK',
+  },
+  client: {
+    id: 'c1-1',
+    name: 'Wendy Fischer',
+    email: 'wendy@harborline.com',
+    initials: 'WF',
   },
 };

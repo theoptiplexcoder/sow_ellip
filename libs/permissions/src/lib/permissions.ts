@@ -8,14 +8,24 @@ export const PERMISSIONS = [
   'workflow:reject',
   'audit:view',
   'user:manage',
+  'sow:view',
+  'sow:comment',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
 
-// Only three personas exist platform-wide (PRD §4). Creator/Approver/
+// Four personas exist platform-wide (PRD §4). Creator/Approver/
 // Executive Viewer are project-level roles held by a Participant, not
-// personas of their own — see PROJECT_ROLES below.
-export const PERSONAS = ['superadmin', 'tenant_admin', 'participant'] as const;
+// personas of their own — see PROJECT_ROLES below. Client is a separate,
+// fixed-permission persona for external stakeholders (PRD §4.2) — never
+// held by a Participant, granted per-project rather than via
+// PROJECT_ROLES.
+export const PERSONAS = [
+  'superadmin',
+  'tenant_admin',
+  'participant',
+  'client',
+] as const;
 
 export type Persona = (typeof PERSONAS)[number];
 
