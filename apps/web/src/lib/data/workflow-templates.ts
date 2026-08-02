@@ -111,3 +111,25 @@ export const workflowTemplates: WorkflowTemplate[] = [
 export function getWorkflowTemplate(id: string) {
   return workflowTemplates.find((w) => w.id === id);
 }
+
+export function createWorkflowTemplate(name: string): WorkflowTemplate {
+  const template: WorkflowTemplate = {
+    id: `wf-${Date.now()}`,
+    name,
+    status: 'active',
+    updatedAt: new Date().toISOString().slice(0, 10),
+    steps: [],
+  };
+  workflowTemplates.push(template);
+  return template;
+}
+
+export function updateWorkflowTemplateStatus(
+  id: string,
+  status: WorkflowTemplate['status'],
+) {
+  const template = getWorkflowTemplate(id);
+  if (!template) return;
+  template.status = status;
+  template.updatedAt = new Date().toISOString().slice(0, 10);
+}

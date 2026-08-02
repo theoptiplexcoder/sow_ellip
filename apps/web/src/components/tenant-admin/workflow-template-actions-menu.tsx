@@ -1,8 +1,6 @@
 'use client';
 
 import { MoreVertical } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { toast } from 'sonner';
 import {
   Button,
@@ -11,30 +9,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@sow-platform/ui';
-import { updateWorkflowTemplateStatus } from '@/lib/actions/workflow-templates';
-import type { WorkflowTemplate } from '@/lib/data/workflow-templates';
+import {
+  updateWorkflowTemplateStatus,
+  type WorkflowTemplate,
+} from '@/lib/data/workflow-templates';
 
 export function WorkflowTemplateActionsMenu({
   id,
   status,
+  onChanged,
 }: {
   id: string;
   status: WorkflowTemplate['status'];
+  onChanged: () => void;
 }) {
-  const [isPending, setIsPending] = useState(false);
-  const router = useRouter();
-
-  async function setStatus(next: WorkflowTemplate['status'], message: string) {
-    setIsPending(true);
-    try {
-      await updateWorkflowTemplateStatus(id, next);
-      toast.success(message);
-      router.refresh();
-    } catch {
-      toast.error('Failed to update workflow template');
-    } finally {
-      setIsPending(false);
-    }
+  function setStatus(next: WorkflowTemplate['status'], message: string) {
+    updateWorkflowTemplateStatus(id, next);
+    toast.success(message);
+    onChanged();
   }
 
   return (
@@ -46,7 +38,6 @@ export function WorkflowTemplateActionsMenu({
             size="icon"
             className="size-7"
             aria-label="Workflow actions"
-            disabled={isPending}
           />
         }
       >

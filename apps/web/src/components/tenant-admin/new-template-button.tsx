@@ -26,24 +26,13 @@ export function NewTemplateButton({
     try {
       const name = 'Untitled Template';
       const blob = await generateDocxBlob(DEFAULT_DOCX_BODY_HTML);
-      const formData = new FormData();
-      formData.set(
-        'file',
-        new File([blob], `${name}.docx`, { type: blob.type }),
-      );
+      const fileUrl = URL.createObjectURL(blob);
 
-      const res = await fetch('/api/templates/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      if (!res.ok) throw new Error('Upload failed');
-      const uploadRes = (await res.json()) as { url: string };
-
-      const template = await createTemplate(
+      const template = createTemplate(
         name,
         DEFAULT_DOCX_BODY_HTML,
         DEFAULT_TEMPLATE_PLACEHOLDERS,
-        uploadRes.url,
+        fileUrl,
       );
       if (onCreated) {
         onCreated(template);

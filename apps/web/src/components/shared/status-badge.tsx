@@ -49,6 +49,11 @@ export function SowStatusBadge({ status }: { status: SowStatus }) {
   return <Stamp {...stamp} />;
 }
 
+/** Shared status → accent color map, derived from the stamp config, for charts and tints elsewhere. */
+export const sowStatusTint: Record<SowStatus, string> = Object.fromEntries(
+  Object.entries(sowStatusStamps).map(([status, { color }]) => [status, color]),
+) as Record<SowStatus, string>;
+
 export function StatusPill({
   active,
   activeLabel = 'Active',

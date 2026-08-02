@@ -1,8 +1,11 @@
+'use client';
+
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
-import { Avatar, AvatarFallback, Badge, Button } from '@sow-platform/ui';
+import { useState } from 'react';
+import { Avatar, AvatarFallback, Badge } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
 import { DataList } from '@/components/shared/data-list';
+import { NewProjectDialog } from '@/components/tenant-admin/new-project-dialog';
 import { projects, type Project } from '@/lib/data/projects';
 import { getUser } from '@/lib/data/users';
 
@@ -13,21 +16,20 @@ const statusLabel: Record<string, string> = {
 };
 
 export default function ProjectsPage() {
+  const [projectList, setProjectList] = useState<Project[]>(projects);
+
   return (
     <div>
       <PageHeader
         title="Projects"
         description="Manage projects tenant-wide."
         actions={
-          <Button>
-            <Plus className="size-4" />
-            New Project
-          </Button>
+          <NewProjectDialog onCreated={() => setProjectList([...projects])} />
         }
       />
 
       <DataList<Project>
-        data={projects}
+        data={projectList}
         getRowKey={(p) => p.id}
         emptyMessage="No projects yet."
         columns={[

@@ -33,6 +33,9 @@ import {
 } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
 import { SowStatusBadge, StatusPill } from '@/components/shared/status-badge';
+import { SectionEyebrow } from '@/components/shared/section-eyebrow';
+import { StatStrip } from '@/components/shared/stat-strip';
+import { StatusStackBar } from '@/components/shared/status-stack-bar';
 import { currentUsers } from '@/lib/data/current-user';
 import { getProjectsForUser } from '@/lib/data/projects';
 import {
@@ -42,16 +45,6 @@ import {
   type SowStatus,
 } from '@/lib/data/sows';
 import { auditLogs } from '@/lib/data/audit-logs';
-
-const STATUS_TINT: Record<SowStatus, string> = {
-  draft: 'var(--muted-foreground)',
-  submitted: 'var(--muted-foreground)',
-  in_review: 'var(--status-pending)',
-  approved: 'var(--status-approved)',
-  rejected: 'var(--status-rejected)',
-  changes_requested: 'var(--status-changes)',
-  archived: 'var(--muted-foreground)',
-};
 
 const ROLE_TINT = {
   creator: 'var(--status-pending)',
@@ -132,70 +125,6 @@ function RoleTag({ label, tint }: { label: string; tint: string }) {
   );
 }
 
-/** Small-caps section label with a trailing rule — replaces boxed card headers. */
-function SectionEyebrow({
-  icon: Icon,
-  tint,
-  label,
-  description,
-}: {
-  icon: React.ElementType;
-  tint: string;
-  label: string;
-  description: string;
-}) {
-  return (
-    <div className="mb-4 flex items-end justify-between gap-4">
-      <div className="flex items-center gap-2.5">
-        <span
-          className="flex size-7 items-center justify-center rounded-md"
-          style={{
-            backgroundColor: `color-mix(in oklab, ${tint} 14%, transparent)`,
-            color: tint,
-          }}
-        >
-          <Icon className="size-3.5" />
-        </span>
-        <div>
-          <h2 className="font-display text-base font-semibold tracking-tight">
-            {label}
-          </h2>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-      </div>
-      <div
-        className="hidden h-px flex-1 sm:block"
-        style={{ backgroundColor: 'var(--border)' }}
-      />
-    </div>
-  );
-}
-
-/** Inline metric row — replaces a grid of stat cards with a single scannable strip. */
-function StatStrip({
-  items,
-}: {
-  items: { label: string; value: string | number; icon: React.ElementType }[];
-}) {
-  return (
-    <div className="mb-5 flex flex-wrap gap-x-8 gap-y-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
-      {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-2.5">
-          <item.icon className="size-4 text-muted-foreground" />
-          <div className="leading-tight">
-            <div className="font-display text-lg font-semibold tabular-nums">
-              {item.value}
-            </div>
-            <div className="text-[11px] text-muted-foreground">
-              {item.label}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function EmptyRow({ children }: { children: React.ReactNode }) {
   return (
     <TableRow className="hover:bg-transparent">
@@ -257,45 +186,6 @@ function DocketTicket({ item, index }: { item: DocketItem; index: number }) {
       </div>
       <ArrowRight className="size-3.5 self-end text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
     </Link>
-  );
-}
-
-/** Single stacked bar replacing a vertical bar chart — same data, denser and more distinctive. */
-function StatusStackBar({
-  data,
-  total,
-}: {
-  data: { key: SowStatus; status: string; count: number }[];
-  total: number;
-}) {
-  const nonZero = data.filter((d) => d.count > 0);
-  return (
-    <div>
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
-        {nonZero.map((d) => (
-          <div
-            key={d.key}
-            style={{
-              width: `${(d.count / total) * 100}%`,
-              backgroundColor: STATUS_TINT[d.key],
-            }}
-            className="h-full first:rounded-l-full last:rounded-r-full"
-          />
-        ))}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
-        {data.map((d) => (
-          <div key={d.key} className="flex items-center gap-1.5 text-xs">
-            <span
-              className="size-2 rounded-full"
-              style={{ backgroundColor: STATUS_TINT[d.key] }}
-            />
-            <span className="text-muted-foreground">{d.status}</span>
-            <span className="font-medium tabular-nums">{d.count}</span>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 

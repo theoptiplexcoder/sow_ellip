@@ -84,24 +84,12 @@ export function DocxEditorTemplateEditor({
       const file = new File([buf], docName, {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       });
-      const [{ html, placeholders: detected }, uploadRes] = await Promise.all([
-        parseDocxFile(file),
-        fetch('/api/templates/upload', {
-          method: 'POST',
-          body: (() => {
-            const formData = new FormData();
-            formData.set('file', file);
-            return formData;
-          })(),
-        }).then((res) => {
-          if (!res.ok) throw new Error('Upload failed');
-          return res.json() as Promise<{ url: string }>;
-        }),
-      ]);
+      const { html, placeholders: detected } = await parseDocxFile(file);
+      const fileUrl = URL.createObjectURL(file);
       const mergedPlaceholders = Array.from(
         new Set([...placeholders, ...detected]),
       );
-      await saveTemplate(templateId, html, mergedPlaceholders, uploadRes.url);
+      saveTemplate(templateId, html, mergedPlaceholders, fileUrl);
       toast.success('Template saved');
     } catch {
       toast.error(

@@ -193,23 +193,12 @@ export function getTemplate(id: string) {
   return templates.find((t) => t.id === id);
 }
 
-/** Persists a template to the server-side store so it's still there when a server-rendered
- *  page (e.g. the template detail page) looks it up — the `templates` array only lives in
- *  the browser's copy of this module. */
-async function persistTemplate(template: Template) {
-  await fetch('/api/templates/store', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(template),
-  });
-}
-
-export async function createTemplate(
+export function createTemplate(
   name: string,
   bodyHtml: string = DEFAULT_DOCX_BODY_HTML,
   placeholders: string[] = [],
   fileUrl?: string,
-): Promise<Template> {
+): Template {
   const today = new Date().toISOString().slice(0, 10);
   const template: Template = {
     id: `tmpl-${Date.now()}`,
@@ -223,11 +212,10 @@ export async function createTemplate(
     versions: [{ version: 1, uploadedAt: today, note: 'Initial upload' }],
   };
   templates.push(template);
-  await persistTemplate(template);
   return template;
 }
 
-export async function saveTemplate(
+export function saveTemplate(
   id: string,
   bodyHtml: string,
   placeholders: string[],
@@ -239,12 +227,10 @@ export async function saveTemplate(
   template.placeholders = placeholders;
   if (fileUrl) template.fileUrl = fileUrl;
   template.updatedAt = new Date().toISOString().slice(0, 10);
-  await persistTemplate(template);
 }
 
-export async function renameTemplate(id: string, name: string) {
+export function renameTemplate(id: string, name: string) {
   const template = getTemplate(id);
   if (!template || !name.trim()) return;
   template.name = name.trim();
-  await persistTemplate(template);
 }

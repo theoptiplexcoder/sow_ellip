@@ -1,48 +1,42 @@
 'use client';
 
-import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis } from 'recharts';
-import { FileText, ScrollText, Users, Workflow } from 'lucide-react';
+import Link from 'next/link';
+import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
+import {
+  ArrowRight,
+  FileText,
+  Gauge,
+  History,
+  Layers,
+  ScrollText,
+  Users,
+  Workflow,
+} from 'lucide-react';
 import {
   Avatar,
   AvatarFallback,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   ScrollArea,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
-import { StatCard } from '@/components/shared/stat-card';
+import { SectionEyebrow } from '@/components/shared/section-eyebrow';
+import { StatStrip } from '@/components/shared/stat-strip';
+import { StatusStackBar } from '@/components/shared/status-stack-bar';
 import { SowStatusBadge } from '@/components/shared/status-badge';
 import { auditLogs } from '@/lib/data/audit-logs';
-import { sows } from '@/lib/data/sows';
+import { sows, sowStatusLabels, type SowStatus } from '@/lib/data/sows';
 import { users } from '@/lib/data/users';
 import { workflowTemplates } from '@/lib/data/workflow-templates';
 import { templates } from '@/lib/data/templates';
-
-const sowStatusData = [
-  { status: 'Draft', count: sows.filter((s) => s.status === 'draft').length },
-  {
-    status: 'Submitted',
-    count: sows.filter((s) => s.status === 'submitted').length,
-  },
-  {
-    status: 'In Review',
-    count: sows.filter((s) => s.status === 'in_review').length,
-  },
-  {
-    status: 'Approved',
-    count: sows.filter((s) => s.status === 'approved').length,
-  },
-  {
-    status: 'Rejected',
-    count: sows.filter((s) => s.status === 'rejected').length,
-  },
-];
 
 const approvalTimeData = [
   { month: 'Mar', days: 6 },
@@ -52,11 +46,8 @@ const approvalTimeData = [
   { month: 'Jul', days: 4.1 },
 ];
 
-const sowStatusConfig = {
-  count: { label: 'SOWs', color: 'var(--chart-1)' },
-} satisfies ChartConfig;
 const approvalTimeConfig = {
-  days: { label: 'Avg. days', color: 'var(--chart-2)' },
+  days: { label: 'Avg. days', color: 'var(--primary)' },
 } satisfies ChartConfig;
 
 export default function TenantAdminDashboard() {
@@ -66,6 +57,25 @@ export default function TenantAdminDashboard() {
     (w) => w.status === 'active',
   ).length;
 
+  const pipelineData = (Object.keys(sowStatusLabels) as SowStatus[])
+    .filter((status) => status !== 'archived')
+    .map((status) => ({
+      key: status,
+      status: sowStatusLabels[status],
+      count: sows.filter((s) => s.status === status).length,
+    }));
+
+  const clientCount = new Set(sows.map((s) => s.clientId)).size;
+
+  const firstApprovalTime = approvalTimeData[0].days;
+  const lastApprovalTime = approvalTimeData[approvalTimeData.length - 1].days;
+  const approvalTimeDelta = lastApprovalTime - firstApprovalTime;
+
+  const recentActivity = auditLogs.slice(0, 6);
+  const recentSows = [...sows]
+    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+    .slice(0, 6);
+
   return (
     <div>
       <PageHeader
@@ -73,56 +83,45 @@ export default function TenantAdminDashboard() {
         description="Northwind Consulting — tenant overview."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Active Users" value={activeUsers} icon={Users} />
-        <StatCard
-          label="Active Templates"
-          value={activeTemplates}
-          icon={FileText}
-        />
-        <StatCard
-          label="Active Workflow Templates"
-          value={activeWorkflowTemplates}
-          icon={Workflow}
-        />
-        <StatCard
-          label="Status Summary"
-          value={`${sows.length} SOWs`}
-          icon={ScrollText}
-          hint="Across all projects"
-        />
-      </div>
+      <StatStrip
+        items={[
+          { label: 'Active users', value: activeUsers, icon: Users },
+          { label: 'Active templates', value: activeTemplates, icon: FileText },
+          {
+            label: 'Active workflows',
+            value: activeWorkflowTemplates,
+            icon: Workflow,
+          },
+          { label: 'Total SOWs', value: sows.length, icon: ScrollText },
+        ]}
+      />
 
-      <h2 className="mt-8 mb-3 font-display text-lg font-semibold tracking-tight">
-        Analytics
-      </h2>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>SOW Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={sowStatusConfig} className="h-56 w-full">
-              <BarChart data={sowStatusData}>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="status"
-                  tickLine={false}
-                  axisLine={false}
-                  fontSize={11}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="count" fill="var(--color-count)" radius={4} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Approval Time (avg. days)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={approvalTimeConfig} className="h-56 w-full">
+      <div className="mt-8 flex flex-col gap-10">
+        <section>
+          <SectionEyebrow
+            icon={Layers}
+            tint="var(--primary)"
+            label="Pipeline"
+            description={`${sows.length} SOWs across ${clientCount} client${clientCount === 1 ? '' : 's'}`}
+          />
+          <div className="rounded-lg border border-border p-4">
+            <StatusStackBar data={pipelineData} total={sows.length} />
+          </div>
+        </section>
+
+        <section>
+          <SectionEyebrow
+            icon={Gauge}
+            tint="var(--primary)"
+            label="Approval velocity"
+            description={`Averaging ${lastApprovalTime.toFixed(1)} days to decision, ${
+              approvalTimeDelta <= 0
+                ? `down ${Math.abs(approvalTimeDelta).toFixed(1)}d`
+                : `up ${approvalTimeDelta.toFixed(1)}d`
+            } since March`}
+          />
+          <div className="rounded-lg border border-border p-4">
+            <ChartContainer config={approvalTimeConfig} className="h-48 w-full">
               <LineChart data={approvalTimeData}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
@@ -132,27 +131,26 @@ export default function TenantAdminDashboard() {
                   dataKey="days"
                   stroke="var(--color-days)"
                   strokeWidth={2}
-                  dot={false}
+                  dot={{ r: 3 }}
                 />
               </LineChart>
             </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </section>
 
-      <h2 className="mt-8 mb-3 font-display text-lg font-semibold tracking-tight">
-        Activity
-      </h2>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-64 pr-4">
-              <ul className="flex flex-col gap-3">
-                {auditLogs.slice(0, 6).map((log) => (
-                  <li key={log.id} className="flex items-start gap-3">
+        <div className="grid gap-10 lg:grid-cols-2">
+          <section>
+            <SectionEyebrow
+              icon={History}
+              tint="var(--primary)"
+              label="Recent activity"
+              description="Latest actions across the tenant"
+            />
+            <ScrollArea className="h-72 pr-4">
+              <ul className="relative flex flex-col gap-4 border-l border-border pl-6">
+                {recentActivity.map((log) => (
+                  <li key={log.id} className="relative flex items-start gap-3">
+                    <span className="absolute top-1 -left-[29px] size-2.5 rounded-full border-2 border-background bg-muted-foreground" />
                     <Avatar className="size-7">
                       <AvatarFallback className="text-xs">
                         {log.actor
@@ -175,32 +173,54 @@ export default function TenantAdminDashboard() {
                 ))}
               </ul>
             </ScrollArea>
-          </CardContent>
-        </Card>
+          </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Project Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="flex flex-col gap-3">
-              {sows.slice(0, 5).map((sow) => (
-                <li
-                  key={sow.id}
-                  className="flex items-center justify-between gap-2 text-sm"
-                >
-                  <div className="min-w-0">
-                    <div className="truncate font-medium">{sow.title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {sow.projectName}
-                    </div>
-                  </div>
-                  <SowStatusBadge status={sow.status} />
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+          <section>
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <SectionEyebrow
+                icon={ScrollText}
+                tint="var(--primary)"
+                label="Project progress"
+                description="Most recently updated SOWs"
+              />
+            </div>
+            <div className="-mt-4 overflow-hidden rounded-lg border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>SOW</TableHead>
+                    <TableHead className="text-right">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentSows.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="max-w-0">
+                        <Link
+                          href={`/tenant-admin/sows/${s.id}`}
+                          className="group flex items-center gap-2 hover:opacity-80"
+                        >
+                          <div className="min-w-0">
+                            <div className="truncate font-medium">
+                              {s.title}
+                            </div>
+                            <div className="truncate text-xs text-muted-foreground">
+                              {s.number} · {s.projectName}
+                            </div>
+                          </div>
+                          <ArrowRight className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <SowStatusBadge status={s.status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

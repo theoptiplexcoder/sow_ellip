@@ -91,4 +91,4 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## 9. `@docs/archive` have previous versions of project files.Always refer to the greater number PRD for laterst PRD.
 
-## 10. You have to create the UI only without touching the backend apis, schemas, or database. Frontend UI prototype is all that is required.
+## 10. You have to create the UI only without touching the backend apis, schemas, or database. Frontend UI prototype is all that is required which is working with data added and fetched to .ts files.

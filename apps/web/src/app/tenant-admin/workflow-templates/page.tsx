@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   Badge,
   Card,
@@ -9,7 +12,10 @@ import {
 import { PageHeader } from '@/components/shared/page-header';
 import { NewWorkflowTemplateDialog } from '@/components/tenant-admin/new-workflow-template-dialog';
 import { WorkflowTemplateActionsMenu } from '@/components/tenant-admin/workflow-template-actions-menu';
-import { workflowTemplates } from '@/lib/data/workflow-templates';
+import {
+  workflowTemplates,
+  type WorkflowTemplate,
+} from '@/lib/data/workflow-templates';
 
 const statusVariant: Record<string, 'default' | 'outline' | 'secondary'> = {
   active: 'default',
@@ -18,16 +24,19 @@ const statusVariant: Record<string, 'default' | 'outline' | 'secondary'> = {
 };
 
 export default function WorkflowTemplatesPage() {
+  const [list, setList] = useState<WorkflowTemplate[]>(workflowTemplates);
+  const refresh = () => setList([...workflowTemplates]);
+
   return (
     <div>
       <PageHeader
         title="Workflow Templates"
         description="Reusable, versioned approval workflows. Editing never affects in-flight approvals."
-        actions={<NewWorkflowTemplateDialog />}
+        actions={<NewWorkflowTemplateDialog onCreated={refresh} />}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {workflowTemplates.map((wf) => (
+        {list.map((wf) => (
           <Card
             key={wf.id}
             className={
@@ -44,7 +53,11 @@ export default function WorkflowTemplatesPage() {
                     {wf.name}
                   </Link>
                 </CardTitle>
-                <WorkflowTemplateActionsMenu id={wf.id} status={wf.status} />
+                <WorkflowTemplateActionsMenu
+                  id={wf.id}
+                  status={wf.status}
+                  onChanged={refresh}
+                />
               </div>
             </CardHeader>
             <CardContent>

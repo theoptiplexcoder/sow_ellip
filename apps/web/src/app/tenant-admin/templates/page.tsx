@@ -49,22 +49,10 @@ export default function TemplatesPage() {
   async function handleUpload(file: File) {
     setUploading(true);
     try {
-      const [{ html, placeholders }, uploadRes] = await Promise.all([
-        parseDocxFile(file),
-        fetch('/api/templates/upload', {
-          method: 'POST',
-          body: (() => {
-            const formData = new FormData();
-            formData.set('file', file);
-            return formData;
-          })(),
-        }).then((res) => {
-          if (!res.ok) throw new Error('Upload failed');
-          return res.json() as Promise<{ url: string }>;
-        }),
-      ]);
+      const { html, placeholders } = await parseDocxFile(file);
+      const fileUrl = URL.createObjectURL(file);
 
-      await createTemplate(file.name, html, placeholders, uploadRes.url);
+      createTemplate(file.name, html, placeholders, fileUrl);
       setTemplateList([...templates]);
       toast.success(
         placeholders.length > 0

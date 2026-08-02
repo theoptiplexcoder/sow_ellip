@@ -2,22 +2,23 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
-import { Badge, Button, Input } from '@sow-platform/ui';
+import { Badge, Input } from '@sow-platform/ui';
 import { PageHeader } from '@/components/shared/page-header';
 import { DataList } from '@/components/shared/data-list';
 import { StatusPill } from '@/components/shared/status-badge';
+import { NewClientDialog } from '@/components/tenant-admin/new-client-dialog';
 import { clients, type Client } from '@/lib/data/clients';
 
 export default function ClientsPage() {
   const [query, setQuery] = useState('');
+  const [clientList, setClientList] = useState<Client[]>(clients);
 
   const filtered = useMemo(
     () =>
-      clients.filter((c) =>
+      clientList.filter((c) =>
         c.company.toLowerCase().includes(query.toLowerCase()),
       ),
-    [query],
+    [query, clientList],
   );
 
   return (
@@ -26,10 +27,7 @@ export default function ClientsPage() {
         title="Clients"
         description="Manage clients tenant-wide."
         actions={
-          <Button>
-            <Plus className="size-4" />
-            New Client
-          </Button>
+          <NewClientDialog onCreated={() => setClientList([...clients])} />
         }
       />
 

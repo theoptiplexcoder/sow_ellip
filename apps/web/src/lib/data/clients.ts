@@ -131,3 +131,21 @@ export const clients: Client[] = [
 export function getClient(id: string) {
   return clients.find((c) => c.id === id);
 }
+
+export function createClient(input: {
+  company: string;
+  owner: string;
+}): Client {
+  const client: Client = {
+    id: `client-${Date.now()}`,
+    company: input.company,
+    owner: input.owner,
+    projectCount: 0,
+    createdAt: new Date().toISOString().slice(0, 10),
+    status: 'active',
+    contacts: [],
+    documents: [],
+  };
+  clients.push(client);
+  return client;
+}

@@ -6,7 +6,6 @@ import { PageHeader } from '@/components/shared/page-header';
 import { DocxEditorTemplateEditor } from '@/components/tenant-admin/docx-editor-template-editor';
 import { TemplateExportActions } from '@/components/tenant-admin/template-export-actions';
 import { getTemplate, hasPlaceholders } from '@/lib/data/templates';
-import { getStoredTemplate } from '@/lib/data/templates-store.server';
 
 export default async function TemplateDetailPage({
   params,
@@ -14,7 +13,7 @@ export default async function TemplateDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const template = getTemplate(id) ?? (await getStoredTemplate(id));
+  const template = getTemplate(id);
   if (!template) notFound();
 
   return (
