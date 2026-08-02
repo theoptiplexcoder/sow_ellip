@@ -1,0 +1,61 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/web-e2e"
+    },
+    {
+      "path": "./apps/web"
+    },
+    {
+      "path": "./libs/auth"
+    },
+    {
+      "path": "./libs/permissions"
+    },
+    {
+      "path": "./libs/database"
+    },
+    {
+      "path": "./libs/storage"
+    },
+    {
+      "path": "./libs/tenants"
+    },
+    {
+      "path": "./libs/users"
+    },
+    {
+      "path": "./libs/clients"
+    },
+    {
+      "path": "./libs/projects"
+    },
+    {
+      "path": "./libs/templates"
+    },
+    {
+      "path": "./libs/sow"
+    },
+    {
+      "path": "./libs/workflow"
+    },
+    {
+      "path": "./libs/audit"
+    },
+    {
+      "path": "./libs/dashboard"
+    },
+    {
+      "path": "./libs/validation"
+    },
+    {
+      "path": "./libs/ui"
+    },
+    {
+      "path": "./libs/shared"
+    }
+  ]
+}

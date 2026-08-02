@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled, transaction mode, port 6543
+  directUrl = env("DIRECT_URL") // direct connection, port 5432, migrations only
+}
+
+// Enable required extensions via a raw SQL migration:
+// CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+// CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+// CREATE EXTENSION IF NOT EXISTS "citext";
+// CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
+// core
+model Tenant {
+  id   String @id @default(uuid())
+  name String
+}
+
+// Stub tenant-scoped tables to confirm the pipeline works end-to-end
+// before real schema design (PRD §6). Every table gets a tenantId
+// column (except Tenant itself) per PRD §3.
+
+model User {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model Persona {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model Permission {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model Client {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model Project {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+// Join table for per-project role assignments held by Participants
+// (PRD §4.1, §6): a user may have multiple rows across projects/roles.
+enum ProjectRole {
+  creator
+  approver
+  executive_viewer
+}
+
+model ProjectRoleAssignment {
+  id          String      @id @default(uuid())
+  tenantId    String
+  projectId   String
+  userId      String
+  projectRole ProjectRole
+}
+
+model Template {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model TemplateVersion {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model Sow {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model SowRevision {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model Workflow {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model WorkflowVersion {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model WorkflowStep {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model WorkflowInstance {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model WorkflowInstanceStep {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model AuditLog {
+  id       String @id @default(uuid())
+  tenantId String
+}
+
+model Attachment {
+  id       String @id @default(uuid())
+  tenantId String
+}

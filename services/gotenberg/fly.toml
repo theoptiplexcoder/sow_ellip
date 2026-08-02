@@ -1,0 +1,8 @@
+app = "sow-platform-gotenberg"
+
+[build]
+  image = "gotenberg/gotenberg:8"
+
+[http_service]
+  internal_port = 3000
+  force_https = true

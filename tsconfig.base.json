@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "importHelpers": true,
+    "isolatedModules": true,
+    "lib": ["es2022"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "es2022",
+    "customConditions": ["@sow-platform/source"],
+    "paths": {
+      "@sow-platform/auth": ["libs/auth/src/index.ts"],
+      "@sow-platform/permissions": ["libs/permissions/src/index.ts"],
+      "@sow-platform/database": ["libs/database/src/index.ts"],
+      "@sow-platform/storage": ["libs/storage/src/index.ts"],
+      "@sow-platform/tenants": ["libs/tenants/src/index.ts"],
+      "@sow-platform/users": ["libs/users/src/index.ts"],
+      "@sow-platform/clients": ["libs/clients/src/index.ts"],
+      "@sow-platform/projects": ["libs/projects/src/index.ts"],
+      "@sow-platform/templates": ["libs/templates/src/index.ts"],
+      "@sow-platform/sow": ["libs/sow/src/index.ts"],
+      "@sow-platform/workflow": ["libs/workflow/src/index.ts"],
+      "@sow-platform/audit": ["libs/audit/src/index.ts"],
+      "@sow-platform/dashboard": ["libs/dashboard/src/index.ts"],
+      "@sow-platform/validation": ["libs/validation/src/index.ts"],
+      "@sow-platform/ui": ["libs/ui/src/index.ts"],
+      "@sow-platform/shared": ["libs/shared/src/index.ts"]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+@media print {
+  nav,
+  header,
+  footer,
+  [data-app-chrome] {
+    display: none !important;
+  }
+
+  body {
+    margin: 0;
+  }
+}
