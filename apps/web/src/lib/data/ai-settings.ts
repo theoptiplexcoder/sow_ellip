@@ -25,7 +25,7 @@ export const tenantAiSettings: TenantAiSettings = {
     openrouter: { model: 'openai/gpt-oss-20b:free', apiKey: '' },
     huggingface: {
       model: 'thinkingmachines/Inkling:fireworks-ai',
-      apiKey: '',
+      apiKey: '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',
     },
   },
   temperature: 0.3,
