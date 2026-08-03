@@ -106,7 +106,7 @@ export default async function ParticipantProjectDetailPage({
   const projectSows = sows.filter((s) => s.projectId === project.id);
 
   return (
-    <div>
+    <div className="mx-auto max-w-5xl">
       <Link
         href="/participant/projects"
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -132,7 +132,7 @@ export default async function ParticipantProjectDetailPage({
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 flex flex-col gap-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex flex-col gap-4">
             <StatCard label="Owner" value={project.owner} icon={User} />
             <StatCard label="SOWs" value={project.sowCount} icon={ScrollText} />
             <StatCard
@@ -150,42 +150,40 @@ export default async function ParticipantProjectDetailPage({
             )}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="flex flex-col gap-4 lg:col-span-2">
-              {project.description && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Description</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      {project.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+          <div className="flex flex-col gap-4">
+            {project.description && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Description</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    {project.description}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
-              {project.requirements && project.requirements.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Requirements</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="flex flex-col gap-2.5">
-                      {project.requirements.map((r) => (
-                        <li key={r} className="flex items-start gap-2 text-sm">
-                          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                          <span>{r}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            {project.requirements && project.requirements.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Requirements</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="flex flex-col gap-2.5">
+                    {project.requirements.map((r) => (
+                      <li key={r} className="flex items-start gap-2 text-sm">
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                        <span>{r}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
             {(project.startDate || project.deadline) && (
-              <Card className="h-fit">
+              <Card>
                 <CardHeader>
                   <CardTitle className="text-sm">Timeline</CardTitle>
                 </CardHeader>

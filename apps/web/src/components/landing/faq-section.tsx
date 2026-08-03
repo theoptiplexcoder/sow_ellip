@@ -17,7 +17,7 @@ const FAQS = [
   },
   {
     q: 'Does it integrate with our existing tools?',
-    a: 'StatementOS connects with Slack, Microsoft Teams, and email for notifications, and exports to DOCX and PDF for systems that need it.',
+    a: 'SOWork connects with Slack, Microsoft Teams, and email for notifications, and exports to DOCX and PDF for systems that need it.',
   },
   {
     q: 'What happens to our data if we cancel?',

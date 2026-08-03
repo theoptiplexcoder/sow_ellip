@@ -23,7 +23,7 @@ export function FinalCtaSection() {
           </h2>
           <p className="mt-5 text-lg text-white/75">
             Join hundreds of consulting firms, agencies, and enterprise teams
-            already moving faster with StatementOS.
+            already moving faster with SOWork.
           </p>
         </Reveal>
 

@@ -2,7 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { type LucideIcon, MoreHorizontal } from 'lucide-react';
+import {
+  type LucideIcon,
+  MoreHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from 'lucide-react';
 import { useState } from 'react';
 import {
   Avatar,
@@ -48,10 +53,12 @@ function NavList({
   items,
   pathname,
   onNavigate,
+  isCollapsed,
 }: {
   items: NavItem[];
   pathname: string;
   onNavigate?: () => void;
+  isCollapsed?: boolean;
 }) {
   return (
     <nav className="flex flex-col gap-1">
@@ -63,8 +70,10 @@ function NavList({
             key={`${item.href}-${item.label}`}
             href={item.href}
             onClick={onNavigate}
+            title={isCollapsed ? item.label : undefined}
             className={cn(
-              'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              'group relative flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors',
+              isCollapsed ? 'justify-center px-0' : 'gap-3 px-3',
               active
                 ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
                 : 'text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
@@ -87,7 +96,7 @@ function NavList({
                 )}
               />
             </span>
-            <span className="truncate">{item.label}</span>
+            {!isCollapsed && <span className="truncate">{item.label}</span>}
           </Link>
         );
       })}
@@ -95,22 +104,35 @@ function NavList({
   );
 }
 
-function AccountRow({ user }: { user: AppShellProps['user'] }) {
+function AccountRow({
+  user,
+  isCollapsed,
+}: {
+  user: AppShellProps['user'];
+  isCollapsed?: boolean;
+}) {
   return (
-    <div className="flex items-center gap-3 border-t border-sidebar-border px-4 py-3.5">
+    <div
+      className={cn(
+        'flex items-center border-t border-sidebar-border py-3.5',
+        isCollapsed ? 'justify-center px-0' : 'gap-3 px-4',
+      )}
+    >
       <Avatar className="size-9 border border-sidebar-border">
         <AvatarFallback className="bg-sidebar-primary/15 font-display text-sm font-semibold text-sidebar-primary">
           {user.initials}
         </AvatarFallback>
       </Avatar>
-      <div className="min-w-0">
-        <div className="truncate text-sm font-medium text-sidebar-foreground">
-          {user.name}
+      {!isCollapsed && (
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium text-sidebar-foreground">
+            {user.name}
+          </div>
+          <div className="truncate text-xs text-sidebar-foreground/55">
+            {user.email}
+          </div>
         </div>
-        <div className="truncate text-xs text-sidebar-foreground/55">
-          {user.email}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -123,6 +145,8 @@ function SidebarBody({
   user,
   pathname,
   onNavigate,
+  isCollapsed,
+  onToggleCollapse,
 }: {
   personaLabel: string;
   navItems: NavItem[];
@@ -131,28 +155,69 @@ function SidebarBody({
   user: AppShellProps['user'];
   pathname: string;
   onNavigate?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-2.5 px-5 py-6">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-sidebar-primary font-display text-sm font-bold text-sidebar-primary-foreground shadow-sm">
-          S
-        </div>
-        <div className="min-w-0">
-          <div className="font-display text-base leading-tight font-semibold tracking-tight">
-            Statement<span className="text-sidebar-primary">OS</span>
+      <div
+        className={cn(
+          'flex items-center py-6',
+          isCollapsed ? 'flex-col gap-4 px-2' : 'gap-2.5 px-4',
+        )}
+      >
+        <div
+          className={cn(
+            'flex items-center',
+            isCollapsed ? 'justify-center w-full' : 'w-full justify-between',
+          )}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-sidebar-primary font-display text-sm font-bold text-sidebar-primary-foreground shadow-sm">
+              S
+            </div>
+            {!isCollapsed && (
+              <div className="min-w-0">
+                <div className="font-display text-base leading-tight font-semibold tracking-tight">
+                  SO<span className="text-sidebar-primary">Work</span>
+                </div>
+                <Badge
+                  variant="outline"
+                  className="mt-0.5 h-4.5 border-sidebar-border px-1.5 text-[10px] font-medium tracking-wide text-sidebar-foreground/55 uppercase"
+                >
+                  {personaLabel}
+                </Badge>
+              </div>
+            )}
           </div>
-          <Badge
-            variant="outline"
-            className="mt-0.5 h-4.5 border-sidebar-border px-1.5 text-[10px] font-medium tracking-wide text-sidebar-foreground/55 uppercase"
-          >
-            {personaLabel}
-          </Badge>
+          {!isCollapsed && (
+            <button
+              onClick={onToggleCollapse}
+              className="text-sidebar-foreground/50 hover:text-sidebar-foreground"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose className="size-4" />
+            </button>
+          )}
         </div>
+        {isCollapsed && (
+          <button
+            onClick={onToggleCollapse}
+            className="text-sidebar-foreground/50 hover:text-sidebar-foreground mt-2"
+            title="Expand sidebar"
+          >
+            <PanelLeftOpen className="size-4" />
+          </button>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-2">
-        <NavList items={navItems} pathname={pathname} onNavigate={onNavigate} />
-        {sidebarExtra}
+        <NavList
+          items={navItems}
+          pathname={pathname}
+          onNavigate={onNavigate}
+          isCollapsed={isCollapsed}
+        />
+        {!isCollapsed && sidebarExtra}
       </div>
       {footerNavItems && footerNavItems.length > 0 && (
         <div className="border-t border-sidebar-border px-3 py-3">
@@ -160,10 +225,11 @@ function SidebarBody({
             items={footerNavItems}
             pathname={pathname}
             onNavigate={onNavigate}
+            isCollapsed={isCollapsed}
           />
         </div>
       )}
-      <AccountRow user={user} />
+      <AccountRow user={user} isCollapsed={isCollapsed} />
     </div>
   );
 }
@@ -262,6 +328,7 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const primaryItems = navItems.slice(0, MOBILE_TAB_COUNT);
   const overflowNavItems = navItems.slice(MOBILE_TAB_COUNT);
@@ -270,8 +337,13 @@ export function AppShell({
 
   return (
     <div data-role={role} className="flex min-h-screen w-full bg-muted/40">
-      <aside className="hidden w-72 shrink-0 border-r border-sidebar-border md:block">
-        <div className="sticky top-0 h-screen">
+      <aside
+        className={cn(
+          'hidden shrink-0 border-r border-sidebar-border md:block transition-all duration-300',
+          isCollapsed ? 'w-20' : 'w-72',
+        )}
+      >
+        <div className="sticky top-0 h-screen overflow-hidden">
           <SidebarBody
             personaLabel={personaLabel}
             navItems={navItems}
@@ -279,6 +351,8 @@ export function AppShell({
             sidebarExtra={sidebarExtra}
             user={user}
             pathname={pathname}
+            isCollapsed={isCollapsed}
+            onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
           />
         </div>
       </aside>
@@ -290,7 +364,7 @@ export function AppShell({
               S
             </div>
             <div className="flex items-baseline gap-1.5 font-display text-sm font-semibold tracking-tight">
-              Statement<span className="text-primary">OS</span>
+              SO<span className="text-primary">Work</span>
             </div>
           </div>
           <Avatar className="size-8 border border-border">
@@ -321,7 +395,7 @@ export function AppShell({
           <div className="flex flex-col">
             <div className="px-4 pt-5 pb-1">
               <div className="font-display text-base font-semibold tracking-tight">
-                Statement<span className="text-primary">OS</span>
+                SO<span className="text-primary">Work</span>
               </div>
               <div className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                 {personaLabel}

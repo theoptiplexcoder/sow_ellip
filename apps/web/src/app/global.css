@@ -234,14 +234,35 @@
 }
 
 @layer base {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply min-h-screen bg-background text-foreground antialiased;
   }
   html {
     @apply font-sans;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    max-width: 100%;
   }
 
   /* Popups rendered above dialogs (dropdowns, selects, popovers, comboboxes)
@@ -253,7 +274,16 @@
   [data-slot='popover-content'],
   [data-slot='combobox-content'],
   [data-slot='hover-card-content'],
-  [data-slot='navigation-menu-content'] {
-    background-color: #fff;
+  [data-slot='navigation-menu-content'],
+  [data-slot='dialog-content'],
+  [data-slot='alert-dialog-content'],
+  [data-slot='sheet-content'] {
+    background-color: #fff !important;
+  }
+}
+
+@layer utilities {
+  [data-slot='table-container'] {
+    overscroll-behavior-inline: contain;
   }
 }

@@ -15,7 +15,7 @@ export default async function TenantAdminSowDetailPage({
   if (!sow) notFound();
 
   return (
-    <div>
+    <div className="mx-auto max-w-5xl">
       <Link
         href="/tenant-admin/sows"
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"

@@ -214,7 +214,7 @@ export function SowDetailTabs({
           <SowExportActions sowId={sow.id} />
         </div>
         {isTemplated && template ? (
-          <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+          <div className="flex flex-col gap-6">
             <div>
               <SectionEyebrow
                 icon={FormInput}
@@ -265,7 +265,12 @@ export function SowDetailTabs({
                   : undefined
               }
             >
-              <div>
+              {showAgentPanel && (
+                <div>
+                  <SowAiAgentPanel sow={sow} />
+                </div>
+              )}
+              <aside className="xl:sticky xl:top-6 xl:self-start">
                 <SectionEyebrow
                   icon={FileText}
                   tint={TINT}
@@ -285,22 +290,14 @@ export function SowDetailTabs({
                 ) : (
                   <Skeleton className="h-[36rem] rounded-md border" />
                 )}
-              </div>
-              {showAgentPanel && (
-                <div className="xl:sticky xl:top-6 xl:self-start">
-                  <SowAiAgentPanel sow={sow} />
-                </div>
-              )}
+              </aside>
             </div>
           </div>
         ) : (
-          <div
-            className={
-              showAgentPanel ? 'grid gap-6 lg:grid-cols-[1fr_360px]' : undefined
-            }
-          >
+          <div className="flex flex-col gap-6">
             <SowBuilderSections
               sow={sow}
+              layout="column"
               onDraftChange={(next) => {
                 draftRef.current = next;
               }}

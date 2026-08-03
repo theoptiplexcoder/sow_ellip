@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ArrowRight, Bot, Building2, HardDrive, Users } from 'lucide-react';
 import {
@@ -47,6 +48,7 @@ function initials(name: string) {
 }
 
 export default function TenantSettingsPage() {
+  const router = useRouter();
   const [name, setName] = useState(currentTenant.name);
   const [logoUrl, setLogoUrl] = useState(currentTenant.logoUrl);
 
@@ -96,6 +98,7 @@ export default function TenantSettingsPage() {
       streamingEnabled,
     });
     toast.success('AI provider settings saved');
+    router.refresh();
   }
 
   const storagePct = Math.round((STORAGE_USED_GB / STORAGE_TOTAL_GB) * 100);

@@ -53,7 +53,7 @@ export function Navbar() {
             <FileCheck2 className="size-4" />
           </span>
           <span className="hidden sm:inline">
-            Statement<span className="text-indigo-500">OS</span>
+            SO<span className="text-indigo-500">Work</span>
           </span>
         </Link>
 

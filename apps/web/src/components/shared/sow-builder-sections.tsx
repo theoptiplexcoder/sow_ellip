@@ -23,9 +23,11 @@ type Section = (typeof sections)[number];
 export function SowBuilderSections({
   sow,
   onDraftChange,
+  layout = 'split',
 }: {
   sow: Sow;
   onDraftChange?: (sections: Sow['sections']) => void;
+  layout?: 'split' | 'column';
 }) {
   const [active, setActive] = useState<Section>('Objectives');
   const [draft, setDraft] = useState<Sow['sections']>(sow.sections);
@@ -35,8 +37,22 @@ export function SowBuilderSections({
   }, [draft]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[200px_1fr]">
-      <nav className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+    <div
+      className={cn(
+        'gap-4',
+        layout === 'column'
+          ? 'flex flex-col'
+          : 'grid gap-6 lg:grid-cols-[200px_1fr]',
+      )}
+    >
+      <nav
+        className={cn(
+          'flex gap-1',
+          layout === 'column'
+            ? 'flex-wrap'
+            : 'overflow-x-auto lg:flex-col lg:overflow-visible',
+        )}
+      >
         {sections.map((s) => (
           <button
             key={s}

@@ -44,7 +44,7 @@ export function Footer() {
               <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-blue-500 text-white">
                 <FileCheck2 className="size-4" />
               </span>
-              Statement<span className="text-indigo-500">OS</span>
+              SO<span className="text-indigo-500">Work</span>
             </Link>
             <p className="mt-4 max-w-xs text-sm text-foreground/50">
               Statement of Work creation, collaboration, review, and approval —
@@ -87,7 +87,7 @@ export function Footer() {
         <Separator className="my-10" />
 
         <div className="flex flex-col items-center justify-between gap-4 text-xs text-foreground/40 sm:flex-row">
-          <p>© 2026 StatementOS. All rights reserved.</p>
+          <p>© 2026 SOWork. All rights reserved.</p>
           <div className="flex items-center gap-5">
             <a href="#" className="hover:text-foreground">
               Privacy

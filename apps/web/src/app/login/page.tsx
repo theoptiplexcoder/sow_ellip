@@ -29,7 +29,7 @@ export default function LoginPage() {
             <FileCheck2 className="size-5" />
           </span>
           <div className="font-display text-2xl font-semibold tracking-tight">
-            Statement<span className="text-primary">OS</span>
+            SO<span className="text-primary">Work</span>
           </div>
           <p className="max-w-xs text-sm leading-6 text-muted-foreground">
             Sign in to manage your statements of work.

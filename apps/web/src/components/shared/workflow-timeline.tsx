@@ -6,6 +6,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { WorkflowInstanceStep } from '@/lib/data/sows';
+import { getUser } from '@/lib/data/users';
 
 const stepMeta: Record<
   WorkflowInstanceStep['status'],
@@ -64,15 +65,27 @@ export function WorkflowTimeline({ steps }: { steps: WorkflowInstanceStep[] }) {
                 </Badge>
               </div>
               <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                <Avatar className="size-5">
-                  <AvatarFallback className="text-[10px]">
-                    {step.actor
+                {(() => {
+                  const approver = getUser(step.actor);
+                  const name = approver?.name ?? step.actor;
+                  const initials =
+                    approver?.avatarInitials ??
+                    name
                       .split(' ')
                       .map((p) => p[0])
-                      .join('')}
-                  </AvatarFallback>
-                </Avatar>
-                {step.actor}
+                      .join('');
+
+                  return (
+                    <>
+                      <Avatar className="size-5">
+                        <AvatarFallback className="text-[10px]">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      {name}
+                    </>
+                  );
+                })()}
                 {step.decidedAt && <span>· {step.decidedAt}</span>}
               </div>
               {step.comment && (

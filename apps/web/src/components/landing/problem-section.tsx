@@ -72,7 +72,7 @@ export function ProblemSection() {
           <ArrowDown className="size-5 text-indigo-500" />
           <p className="font-display text-xl font-semibold">
             <span className="bg-gradient-to-r from-indigo-500 to-blue-500 bg-clip-text text-transparent">
-              StatementOS
+              SOWork
             </span>{' '}
             fixes this.
           </p>

@@ -258,7 +258,12 @@ export function ParticipantSowDetail({
                     : undefined
                 }
               >
-                <div>
+                {showAgentPanel && (
+                  <div>
+                    <SowAiAgentPanel sow={sow} />
+                  </div>
+                )}
+                <aside className="xl:sticky xl:top-6 xl:self-start">
                   <SectionEyebrow
                     icon={FileText}
                     tint={TINT}
@@ -278,12 +283,7 @@ export function ParticipantSowDetail({
                   ) : (
                     <Skeleton className="h-[36rem] rounded-md border" />
                   )}
-                </div>
-                {showAgentPanel && (
-                  <div className="xl:sticky xl:top-6 xl:self-start">
-                    <SowAiAgentPanel sow={sow} />
-                  </div>
-                )}
+                </aside>
               </div>
             </div>
           ) : (

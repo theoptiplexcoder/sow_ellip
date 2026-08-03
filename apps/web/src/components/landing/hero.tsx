@@ -122,7 +122,7 @@ export function Hero() {
             <span className="size-2.5 rounded-full bg-amber-400/70" />
             <span className="size-2.5 rounded-full bg-emerald-400/70" />
             <span className="ml-3 text-xs text-foreground/40">
-              app.statementos.com/sow/enterprise-rollout
+              app.sowork.com/sow/enterprise-rollout
             </span>
           </div>
 
