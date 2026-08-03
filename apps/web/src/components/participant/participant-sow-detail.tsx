@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import type { DocxEditorRef } from '@eigenpal/docx-editor-react';
 import {
   AlertTriangle,
+  Bot,
   Building2,
   FileText,
   FormInput,
@@ -251,49 +252,38 @@ export function ParticipantSowDetail({
                 </Card>
               </div>
 
-              <div
-                className={
-                  showAgentPanel
-                    ? 'grid gap-6 xl:grid-cols-[1fr_340px]'
-                    : undefined
-                }
-              >
-                {showAgentPanel && (
-                  <div>
-                    <SowAiAgentPanel sow={sow} />
-                  </div>
-                )}
-                <aside className="xl:sticky xl:top-6 xl:self-start">
+              <div>
+                <div className="mb-4 flex items-end justify-between gap-4">
                   <SectionEyebrow
                     icon={FileText}
                     tint={TINT}
                     label="Document"
                     description="Edit the generated document directly"
                   />
-                  {buffer ? (
-                    <DocxEditor
-                      ref={editorRef}
-                      documentBuffer={buffer}
-                      mode="editing"
-                      showZoomControl={false}
-                      documentName={sow.title}
-                      documentNameEditable={false}
-                      className="h-[36rem] rounded-md border"
-                    />
-                  ) : (
-                    <Skeleton className="h-[36rem] rounded-md border" />
-                  )}
-                </aside>
+                  {showAgentPanel && <AiAgentDrawer sow={sow} />}
+                </div>
+                {buffer ? (
+                  <DocxEditor
+                    ref={editorRef}
+                    documentBuffer={buffer}
+                    mode="editing"
+                    showZoomControl={false}
+                    documentName={sow.title}
+                    documentNameEditable={false}
+                    className="h-[36rem] rounded-md border"
+                  />
+                ) : (
+                  <Skeleton className="h-[36rem] rounded-md border" />
+                )}
               </div>
             </div>
           ) : (
-            <div
-              className={
-                showAgentPanel
-                  ? 'grid gap-6 lg:grid-cols-[1fr_360px]'
-                  : undefined
-              }
-            >
+            <div>
+              {showAgentPanel && (
+                <div className="mb-4 flex justify-end">
+                  <AiAgentDrawer sow={sow} />
+                </div>
+              )}
               <SowBuilderSections
                 key={sow.updatedAt}
                 sow={sow}
@@ -301,7 +291,6 @@ export function ParticipantSowDetail({
                   draftRef.current = next;
                 }}
               />
-              {showAgentPanel && <SowAiAgentPanel sow={sow} />}
             </div>
           )
         ) : (
@@ -577,5 +566,25 @@ export function ParticipantSowDetail({
         </div>
       </TabsContent>
     </Tabs>
+  );
+}
+
+function AiAgentDrawer({ sow }: { sow: Sow }) {
+  return (
+    <Sheet>
+      <SheetTrigger render={<Button variant="outline" size="sm" />}>
+        <Bot className="size-4" /> AI Agent
+      </SheetTrigger>
+      <SheetContent className="flex w-full flex-col sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <Bot className="size-4" /> AI Agent
+          </SheetTitle>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <SowAiAgentPanel sow={sow} />
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
